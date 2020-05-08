@@ -32,32 +32,18 @@ module.exports = function createPlugin(app) {
   plugin.description = 'tdb';
 
   var position_update = null;
-  var position_retention = null;
-  var position_radius = null;
   var url;
-  var headers;
-  var headers = '{ "accept": "application/geo+json" }';
   var interval_id1;
   var interval_id2;
   var unsubscribes = [];
 
 plugin.start = function (options, restartPlugin) {
 
-  app.subscriptionmanager.subscribe(
-    localSubscription,
-    unsubscribes,
-    subscriptionError => {
-      app.error('Error:' + subscriptionError);
-    },
-    delta => {
-      delta.updates.forEach(u => {
-        app.debug(u);
-      });
-    }
-  );
+  position_update = options.position_update
+  app.debug('Plugin started');
 
-  interval_id1 = setInterval(read_info,(5000));
-  setTimeout(clear, 5000);
+  interval_id1 = setInterval(read_info,(15000));
+  setTimeout(clear, 15000);
   interval_id2 = setInterval(read_info,(position_update * 60000));
 
   };
@@ -118,8 +104,8 @@ function ais_out(enc_msg) {
   var sentence = enc.nmea
   if ( sentence && sentence.length > 0 )
   {
-    app.debug(sentence)
-    app.emit('nmea0183out', sentence)
+    app.debug(sentence);
+    app.emit('nmea0183out', sentence);
   }
 }
 
@@ -201,17 +187,21 @@ function ais_out(enc_msg) {
               dimD: (jsonContent[jsonKey].design.beam.value)/2
             }
 
+
             if (jsonContent[jsonKey].sensor.ais.class.value == "A") {
+               app.debug("A " + i);
                ais_out(enc_msg_3);
                ais_out(enc_msg_5);
             }
             if (jsonContent[jsonKey].sensor.ais.class.value == "B") {
+               app.debug("B " + i);
                ais_out(enc_msg_18);
                ais_out(enc_msg_24_0);
                ais_out(enc_msg_24_1);
             }
 
           }
+        app.setProviderStatus(`Number of AIS targets sent: ${numberAIS-1}`);
         })
         .catch(err => console.error(err));
   };
@@ -220,8 +210,6 @@ function ais_out(enc_msg) {
 
   plugin.stop = function stop() {
     clearInterval(interval_id2);
-    unsubscribes.forEach((f) => f());
-    unsubscribes = [];
     app.debug('Stopped');
   };
 

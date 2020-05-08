@@ -1,7 +1,7 @@
 {
   "name": "signalk-skais-to-nme0183",
   "version": "0.0.1",
-  "description": "Signalk other vessel information to NMEA0183 AIS",
+  "description": "SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
