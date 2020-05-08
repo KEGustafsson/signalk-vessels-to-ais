@@ -27,9 +27,9 @@ const AisEncode = require("ggencoder").AisEncode
 
 module.exports = function createPlugin(app) {
   const plugin = {};
-  plugin.id = 'skais-to-nmea0183';
+  plugin.id = 'signalk-vessels-to-ais';
   plugin.name = 'Other vessels data to AIS NMEA0183';
-  plugin.description = 'tdb';
+  plugin.description = 'SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications';
 
   var position_update = null;
   var url;

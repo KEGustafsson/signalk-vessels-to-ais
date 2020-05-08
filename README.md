@@ -1,4 +1,4 @@
-# signalk-skais-to-nmea0183
+# signalk-vessels-to-ais
 SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications.
 
 User can configure:

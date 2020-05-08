@@ -1,5 +1,5 @@
 {
-  "name": "signalk-skais-to-nmea0183",
+  "name": "signalk-vessels-to-ais",
   "version": "0.0.1",
   "description": "SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications",
   "main": "index.js",
@@ -9,7 +9,7 @@
   "keywords": [
     "signalk-node-server-plugin"
   ],
-  "repository": "https://github.com/KEGUstafsson/signalk-skais-to-nmea0183",
+  "repository": "https://github.com/KEGUstafsson/signalk-vessels-to-ais",
   "author": "Karl-Erik Gustafsson",
   "license": "MIT",
   "dependencies": {
