@@ -1,5 +1,5 @@
 {
-  "name": "signalk-ais-to-nme0183",
+  "name": "signalk-skais-to-nme0183",
   "version": "0.0.1",
   "description": "Signalk other vessel information to NMEA0183 AIS",
   "main": "index.js",
@@ -9,7 +9,7 @@
   "keywords": [
     "signalk-node-server-plugin"
   ],
-  "repository": "https://github.com/KEGUstafsson/signalk-ais-to-nmea0183",
+  "repository": "https://github.com/KEGUstafsson/signalk-skais-to-nmea0183",
   "author": "Karl-Erik Gustafsson",
   "license": "MIT",
   "dependencies": {

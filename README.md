@@ -1,2 +1,2 @@
-# signalk-ais-to-nmea0183
-Command line test application to collect SignalK other vessel data and forward it in NMEA0183 AIS format.
+# signalk-skais-to-nmea0183
+SignalK server plgin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications.
