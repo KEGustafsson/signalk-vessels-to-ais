@@ -127,7 +127,7 @@ function ais_out(enc_msg) {
 
             try { var mmsi = jsonContent[jsonKey].mmsi;} catch (error) {mmsi = null;};
             try { var name = jsonContent[jsonKey].name;} catch (error) {name = null;};
-            try { var lat = jsonContent[jsonKey].navigation.position.value.latitude;} catch (error) {lat = null;};
+            try { var lat = jsonContent[jsonKey].navigation.position.value.latitude;} catch (error) {lat = null ;};
             try { var lon = jsonContent[jsonKey].navigation.position.value.longitude;} catch (error) {lon = null;};
             try { var sog = ms_to_knots(jsonContent[jsonKey].navigation.speedOverGround.value);} catch (error) {sog = null;};
             try { var cog = radians_to_degrees(jsonContent[jsonKey].navigation.courseOverGroundTrue.value);} catch (error) {cog = null;};
@@ -141,8 +141,8 @@ function ais_out(enc_msg) {
             try { var type = jsonContent[jsonKey].design.aisShipType.value.name;} catch (error) {type = null;};
             try { var draft_cur = (jsonContent[jsonKey].design.draft.value.current)/10;} catch (error) {draft_cur = null;};
             try { var length = jsonContent[jsonKey].design.length.value.overall;} catch (error) {length = null;};
-            try { var beam = jsonContent[jsonKey].design.beam.value;} catch (error) {beam = null;};
-            try { var ais = jsonContent[jsonKey].sensor.ais.class.value;} catch (error) {ais = null;};
+            try { var beam = (jsonContent[jsonKey].design.beam.value)/2;} catch (error) {beam = null;};
+            try { var ais = jsonContent[jsonKey].sensors.ais.class.value;} catch (error) {ais = null;};
 
             enc_msg_3 = {
               aistype: 3, // class A position report
@@ -169,8 +169,8 @@ function ais_out(enc_msg) {
               destination: dst,
               dimA: 0,
               dimB: length,
-              dimC: beam/2,
-              dimD: beam/2
+              dimC: beam,
+              dimD: beam
             }
 
             enc_msg_18 = {
@@ -205,7 +205,6 @@ function ais_out(enc_msg) {
               dimC: beam/2,
               dimD: beam/2
             }
-
 
             if (ais == "A") {
                app.debug("A " + i);
