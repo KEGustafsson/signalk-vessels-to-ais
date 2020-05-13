@@ -207,12 +207,12 @@ function ais_out(enc_msg) {
             }
 
             if (ais == "A") {
-               app.debug("A " + i);
+               app.debug("class A " + i);
                ais_out(enc_msg_3);
                ais_out(enc_msg_5);
             }
             if (ais == "B") {
-               app.debug("B " + i);
+               app.debug("class B " + i);
                ais_out(enc_msg_18);
                ais_out(enc_msg_24_0);
                ais_out(enc_msg_24_1);
