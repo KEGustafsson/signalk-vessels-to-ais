@@ -125,75 +125,94 @@ function ais_out(enc_msg) {
           for (i = 1; i < numberAIS; i++) {
             var jsonKey = Object.keys(jsonContent)[i];
 
+            try { var mmsi = jsonContent[jsonKey].mmsi;} catch (error) {mmsi = null;};
+            try { var name = jsonContent[jsonKey].name;} catch (error) {name = null;};
+            try { var lat = jsonContent[jsonKey].navigation.position.value.latitude;} catch (error) {lat = null;};
+            try { var lon = jsonContent[jsonKey].navigation.position.value.longitude;} catch (error) {lon = null;};
+            try { var sog = ms_to_knots(jsonContent[jsonKey].navigation.speedOverGround.value);} catch (error) {sog = null;};
+            try { var cog = radians_to_degrees(jsonContent[jsonKey].navigation.courseOverGroundTrue.value);} catch (error) {cog = null;};
+            try { var rot = radians_to_degrees(jsonContent[jsonKey].navigation.rateOfTurn.value);} catch (error) {rot = null;};
+            try { var navStat = stateMapping[jsonContent[jsonKey].navigation.state.value];} catch (error) {navStat = null;};
+            try { var hdg = radians_to_degrees(jsonContent[jsonKey].navigation.headingTrue.value);} catch (error) {hdg = null;};
+            try { var dst = jsonContent[jsonKey].navigation.destination.commonName.value;} catch (error) {dst = null;};
+            try { var callSign = jsonContent[jsonKey].communication.callsignVhf;} catch (error) {callSign = null;};
+            try { var imo = (jsonContent[jsonKey].registrations.imo).substring(4, 20);} catch (error) {imo = null;};
+            try { var id = jsonContent[jsonKey].design.aisShipType.value.id;} catch (error) {id = null;};
+            try { var type = jsonContent[jsonKey].design.aisShipType.value.name;} catch (error) {type = null;};
+            try { var draft_cur = (jsonContent[jsonKey].design.draft.value.current)/10;} catch (error) {draft_cur = null;};
+            try { var length = jsonContent[jsonKey].design.length.value.overall;} catch (error) {length = null;};
+            try { var beam = jsonContent[jsonKey].design.beam.value;} catch (error) {beam = null;};
+            try { var ais = jsonContent[jsonKey].sensor.ais.class.value;} catch (error) {ais = null;};
+
             enc_msg_3 = {
               aistype: 3, // class A position report
               repeat: 0,
-              mmsi: jsonContent[jsonKey].mmsi,
-              navstatus: stateMapping[jsonContent[jsonKey].navigation.state.value],
-              sog: ms_to_knots(jsonContent[jsonKey].navigation.speedOverGround.value),
-              lon: jsonContent[jsonKey].navigation.position.value.longitude,
-              lat: jsonContent[jsonKey].navigation.position.value.latitude,
-              cog: radians_to_degrees(jsonContent[jsonKey].navigation.courseOverGroundTrue.value),
-              hdg: radians_to_degrees(jsonContent[jsonKey].navigation.headingTrue.value),
-              rot: radians_to_degrees(jsonContent[jsonKey].navigation.rateOfTurn.value)
+              mmsi: mmsi,
+              navstatus: navStat,
+              sog: sog,
+              lon: lon,
+              lat: lat,
+              cog: cog,
+              hdg: hdg,
+              rot: rot
             }
 
             enc_msg_5 = {
               aistype: 5, //class A static
               repeat: 0,
-              mmsi: jsonContent[jsonKey].mmsi,
-              imo: (jsonContent[jsonKey].registrations.imo).substring(4, 20),
-              cargo: jsonContent[jsonKey].design.aisShipType.value.id,
-              callsign: jsonContent[jsonKey].communication.callsignVhf,
-              shipname: jsonContent[jsonKey].name,
-              draught: jsonContent[jsonKey].design.draft.value.current/10,
-              destination: jsonContent[jsonKey].navigation.destination.commonName.value,
+              mmsi: mmsi,
+              imo: imo,
+              cargo: id,
+              callsign: callSign,
+              shipname: name,
+              draught: draft_cur,
+              destination: dst,
               dimA: 0,
-              dimB: jsonContent[jsonKey].design.length.value.overall,
-              dimC: (jsonContent[jsonKey].design.beam.value)/2,
-              dimD: (jsonContent[jsonKey].design.beam.value)/2
+              dimB: length,
+              dimC: beam/2,
+              dimD: beam/2
             }
 
             enc_msg_18 = {
               aistype: 18, // class B position report
               repeat: 0,
-              mmsi: jsonContent[jsonKey].mmsi,
-              sog: ms_to_knots(jsonContent[jsonKey].navigation.speedOverGround.value),
+              mmsi: mmsi,
+              sog: sog,
               accuracy: 0,
-              lon: jsonContent[jsonKey].navigation.position.value.longitude,
-              lat: jsonContent[jsonKey].navigation.position.value.latitude,
-              cog: radians_to_degrees(jsonContent[jsonKey].navigation.courseOverGroundTrue.value),
-              hdg: radians_to_degrees(jsonContent[jsonKey].navigation.headingTrue.value)
+              lon: lon,
+              lat: lat,
+              cog: cog,
+              hdg: hdg
             }
 
             enc_msg_24_0 = {
               aistype: 24, // class B static
               repeat: 0,
               part: 0,
-              mmsi: jsonContent[jsonKey].mmsi,
-              shipname: jsonContent[jsonKey].name
+              mmsi: mmsi,
+              shipname: name
             }
 
             enc_msg_24_1 = {
               aistype: 24, // class B static
               repeat: 0,
               part: 1,
-              mmsi: jsonContent[jsonKey].mmsi,
-              cargo: jsonContent[jsonKey].design.aisShipType.value.id,
-              callsign: jsonContent[jsonKey].communication.callsignVhf,
+              mmsi: mmsi,
+              cargo: id,
+              callsign: callSign,
               dimA: 0,
-              dimB: jsonContent[jsonKey].design.length.value.overall,
-              dimC: (jsonContent[jsonKey].design.beam.value)/2,
-              dimD: (jsonContent[jsonKey].design.beam.value)/2
+              dimB: length,
+              dimC: beam/2,
+              dimD: beam/2
             }
 
 
-            if (jsonContent[jsonKey].sensor.ais.class.value == "A") {
+            if (ais == "A") {
                app.debug("A " + i);
                ais_out(enc_msg_3);
                ais_out(enc_msg_5);
             }
-            if (jsonContent[jsonKey].sensor.ais.class.value == "B") {
+            if (ais == "B") {
                app.debug("B " + i);
                ais_out(enc_msg_18);
                ais_out(enc_msg_24_0);
