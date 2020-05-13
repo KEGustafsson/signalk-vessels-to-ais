@@ -135,7 +135,7 @@ function ais_out(enc_msg) {
             try { var navStat = stateMapping[jsonContent[jsonKey].navigation.state.value];} catch (error) {navStat = null;};
             try { var hdg = radians_to_degrees(jsonContent[jsonKey].navigation.headingTrue.value);} catch (error) {hdg = null;};
             try { var dst = jsonContent[jsonKey].navigation.destination.commonName.value;} catch (error) {dst = null;};
-            try { var callSign = jsonContent[jsonKey].communication.callsignVhf;} catch (error) {callSign = null;};
+            try { var callSign = jsonContent[jsonKey].communication.callsignVhf;} catch (error) {callSign = "";};
             try { var imo = (jsonContent[jsonKey].registrations.imo).substring(4, 20);} catch (error) {imo = null;};
             try { var id = jsonContent[jsonKey].design.aisShipType.value.id;} catch (error) {id = null;};
             try { var type = jsonContent[jsonKey].design.aisShipType.value.name;} catch (error) {type = null;};
