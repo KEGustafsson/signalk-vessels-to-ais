@@ -5,6 +5,7 @@ User can configure:
 - How often data is sent out
 
 New:
+- v0.0.2, fix:data parsing
 - v0.0.1, 1st version
 
 ToDo:
