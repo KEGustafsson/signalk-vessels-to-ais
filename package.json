@@ -9,7 +9,7 @@
   "keywords": [
     "signalk-node-server-plugin"
   ],
-  "repository": "https://github.com/KEGUstafsson/signalk-vessels-to-ais",
+  "repository": "https://github.com/KEGustafsson/signalk-vessels-to-ais",
   "author": "Karl-Erik Gustafsson",
   "license": "MIT",
   "dependencies": {
