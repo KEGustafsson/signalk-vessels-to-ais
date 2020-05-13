@@ -202,8 +202,8 @@ function ais_out(enc_msg) {
               callsign: callSign,
               dimA: 0,
               dimB: length,
-              dimC: beam/2,
-              dimD: beam/2
+              dimC: beam,
+              dimD: beam
             }
 
             if (ais == "A") {
