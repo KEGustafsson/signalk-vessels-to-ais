@@ -1,4 +1,6 @@
 # signalk-vessels-to-ais
+[![npm version](https://badge.fury.io/js/signalk-vessels-to-ais.svg)](https://badge.fury.io/js/signalk-vessels-to-ais)
+
 SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications.
 
 User can configure:
