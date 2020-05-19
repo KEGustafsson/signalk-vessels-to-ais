@@ -113,6 +113,7 @@ function ais_out(enc_msg) {
 // Read and parse AIS data
 
   read_info = function read_data() {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
         var url ="http://localhost:3000/signalk/v1/api/vessels";
 
         fetch(url, { method: 'GET'})
