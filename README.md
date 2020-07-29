@@ -8,12 +8,10 @@ User can configure:
 - How often data is sent out
 
 New:
+- v1.0.0, v1 release
 - v0.0.6, fix:node-fetch issue with self signed cert
 - v0.0.5, fix:callSign default value
 - v0.0.4, fix:beam calc
 - v0.0.3, fix:ais path
 - v0.0.2, fix:data parsing
 - v0.0.1, 1st version
-
-ToDo:
-- More testing and improvements

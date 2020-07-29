@@ -220,9 +220,17 @@ function ais_out(enc_msg) {
             }
 
           }
-        app.setProviderStatus(`Number of AIS targets sent: ${numberAIS-1}`);
+        var dateobj = new Date( Date.now());
+        var date = dateobj.toISOString();
+        app.handleMessage(plugin.id, {
+          context: `vessels.${app.selfId}`,
+          updates: [
+          ]
+        });
+        app.setProviderStatus(`Number of AIS targets sent: ${numberAIS-1} (${date})`);
         })
         .catch(err => console.error(err));
+
   };
 
 //----------------------------------------------------------------------------
