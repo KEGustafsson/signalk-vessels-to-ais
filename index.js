@@ -127,19 +127,19 @@ function ais_out(enc_msg) {
             var jsonKey = Object.keys(jsonContent)[i];
 
             try { var mmsi = jsonContent[jsonKey].mmsi;} catch (error) {mmsi = null;};
-            try { var name = jsonContent[jsonKey].name;} catch (error) {name = null;};
+            try { var name = jsonContent[jsonKey].name;} catch (error) {name = "";};
             try { var lat = jsonContent[jsonKey].navigation.position.value.latitude;} catch (error) {lat = null ;};
             try { var lon = jsonContent[jsonKey].navigation.position.value.longitude;} catch (error) {lon = null;};
             try { var sog = ms_to_knots(jsonContent[jsonKey].navigation.speedOverGround.value);} catch (error) {sog = null;};
             try { var cog = radians_to_degrees(jsonContent[jsonKey].navigation.courseOverGroundTrue.value);} catch (error) {cog = null;};
             try { var rot = radians_to_degrees(jsonContent[jsonKey].navigation.rateOfTurn.value);} catch (error) {rot = null;};
-            try { var navStat = stateMapping[jsonContent[jsonKey].navigation.state.value];} catch (error) {navStat = null;};
+            try { var navStat = stateMapping[jsonContent[jsonKey].navigation.state.value];} catch (error) {navStat = "";};
             try { var hdg = radians_to_degrees(jsonContent[jsonKey].navigation.headingTrue.value);} catch (error) {hdg = null;};
-            try { var dst = jsonContent[jsonKey].navigation.destination.commonName.value;} catch (error) {dst = null;};
+            try { var dst = jsonContent[jsonKey].navigation.destination.commonName.value;} catch (error) {dst = "";};
             try { var callSign = jsonContent[jsonKey].communication.callsignVhf;} catch (error) {callSign = "";};
             try { var imo = (jsonContent[jsonKey].registrations.imo).substring(4, 20);} catch (error) {imo = null;};
             try { var id = jsonContent[jsonKey].design.aisShipType.value.id;} catch (error) {id = null;};
-            try { var type = jsonContent[jsonKey].design.aisShipType.value.name;} catch (error) {type = null;};
+            try { var type = jsonContent[jsonKey].design.aisShipType.value.name;} catch (error) {type = "";};
             try { var draft_cur = (jsonContent[jsonKey].design.draft.value.current)/10;} catch (error) {draft_cur = null;};
             try { var length = jsonContent[jsonKey].design.length.value.overall;} catch (error) {length = null;};
             try { var beam = (jsonContent[jsonKey].design.beam.value)/2;} catch (error) {beam = null;};
