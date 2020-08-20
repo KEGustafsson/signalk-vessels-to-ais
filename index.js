@@ -145,6 +145,22 @@ function ais_out(enc_msg) {
             try { var beam = (jsonContent[jsonKey].design.beam.value)/2;} catch (error) {beam = null;};
             try { var ais = jsonContent[jsonKey].sensors.ais.class.value;} catch (error) {ais = null;};
 
+            if (name % 1 == 0) {
+               name = "";
+            }
+            if (navStat % 1 == 0) {
+               navStat = "";
+            }
+            if (dst % 1 == 0) {
+               dst = "";
+            }
+            if (callSign % 1 == 0) {
+               callSign = "";
+            }
+            if (type % 1 == 0) {
+               type = "";
+            }
+
             enc_msg_3 = {
               aistype: 3, // class A position report
               repeat: 0,
