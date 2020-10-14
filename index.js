@@ -243,7 +243,7 @@ function ais_out(enc_msg) {
           updates: [
           ]
         });
-        app.setProviderStatus(`Number of AIS targets sent: ${numberAIS-1} (${date})`);
+        app.setPluginStatus(`Number of AIS targets sent: ${numberAIS-1} (${date})`);
         })
         .catch(err => console.error(err));
 
