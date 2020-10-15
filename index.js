@@ -36,6 +36,7 @@ module.exports = function createPlugin(app) {
   var interval_id1;
   var interval_id2;
   var unsubscribes = [];
+  const setStatus = app.setPluginStatus || app.setProviderStatus;
 
 plugin.start = function (options, restartPlugin) {
 
@@ -243,7 +244,7 @@ function ais_out(enc_msg) {
           updates: [
           ]
         });
-        app.setPluginStatus(`Number of AIS targets sent: ${numberAIS-1} (${date})`);
+        setStatus(`Number of AIS targets sent: ${numberAIS-1} (${date})`);
         })
         .catch(err => console.error(err));
 
