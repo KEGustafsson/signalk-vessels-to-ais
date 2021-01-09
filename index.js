@@ -48,14 +48,22 @@ module.exports = function createPlugin(app) {
       .then(function (res) {
         console.log(plugin.id + ": SSL enabled, using https");
         if (!res.ok) {
-          url = "http://localhost:3000/signalk/v1/api/vessels";
-          console.log(plugin.id + ": SSL disabled, using http");
-        }
-        return res.json();
+          console.error(plugin.id + ": SSL enabled, but error accessing server. Check 'Allow Readonly Access' and enable it.");
+          setStatus("Error accessing server. Check 'Allow Readonly Access' and enable it");
+        } 
       })
       .catch((err) => {
         url = "http://localhost:3000/signalk/v1/api/vessels";
-        console.log(plugin.id + ": SSL disabled, using http");
+        fetch(url, { method: "GET" })
+        .then(function (res) {
+          console.log(plugin.id + ": SSL disabled, using http");
+          if (!res.ok) {
+            console.error(plugin.id + ": SSL disabled, but error accessing server. Check 'Allow Readonly Access' and enable it.");
+            setStatus("Error accessing server. Check 'Allow Readonly Access' and enable it");
+          } 
+        })
+        .catch((err) => {
+        }); 
       });
 
     position_update = options.position_update
