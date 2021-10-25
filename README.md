@@ -8,6 +8,7 @@ User can configure:
 - How often data is sent out
 
 New:
+- v1.1.3, add: own vessel data and sending interval modified from min to sec
 - v1.1.2, fix: http/https url selection and better error info
 - v1.1.1, fix: current status of the plugin updated
 - v1.1.0, fix: numeric value test for text strings of AIS
