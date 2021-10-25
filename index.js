@@ -72,7 +72,7 @@ module.exports = function createPlugin(app) {
 
     intervalStart = setInterval(readInfo, (15000));
     setTimeout(clear, 15000);
-    intervalRun = setInterval(readInfo, (positionUpdate * 60000));
+    intervalRun = setInterval(readInfo, (positionUpdate * 1000));
   };
 
   //----------------------------------------------------------------------------
@@ -124,13 +124,13 @@ module.exports = function createPlugin(app) {
 
   readInfo = function readData() {
     let i, mmsi, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
-    let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241;
+    let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
     fetch(url, { method: 'GET' })
       .then((res) => res.json())
       .then((json) => {
         const jsonContent = JSON.parse(JSON.stringify(json));
         const numberAIS = Object.keys(jsonContent).length;
-        for (i = 1; i < numberAIS; i++) {
+        for (i = 0; i < numberAIS; i++) {
           const jsonKey = Object.keys(jsonContent)[i];
 
           try {
@@ -164,7 +164,11 @@ module.exports = function createPlugin(app) {
             dst = jsonContent[jsonKey].navigation.destination.commonName.value;
           } catch (error) { dst = ''; }
           try {
-            callSign = jsonContent[jsonKey].communication.callsignVhf;
+            if (i === 0) {
+              callSign = jsonContent[jsonKey].communication.callsignVhf;
+            } else {
+              callSign = jsonContent[jsonKey].communication.value.callsignVhf;
+            }
           } catch (error) { callSign = ''; }
           try {
             imo = (jsonContent[jsonKey].registrations.imo).substring(4, 20);
@@ -201,7 +205,14 @@ module.exports = function createPlugin(app) {
             type = '';
           }
 
+          if (i === 0) {
+            own = true;
+          } else {
+            own = false;
+          }
+
           encMsg3 = {
+            own,
             aistype: 3, // class A position report
             repeat: 0,
             mmsi,
@@ -215,6 +226,7 @@ module.exports = function createPlugin(app) {
           };
 
           encMsg5 = {
+            own,
             aistype: 5, // class A static
             repeat: 0,
             mmsi,
@@ -299,8 +311,8 @@ module.exports = function createPlugin(app) {
     properties: {
       position_update: {
         type: 'integer',
-        default: 1,
-        title: 'How often AIS data is sent to NMEA0183 out (in minutes)',
+        default: 10,
+        title: 'How often AIS data is sent to NMEA0183 out (in seconds)',
       },
     },
   };
