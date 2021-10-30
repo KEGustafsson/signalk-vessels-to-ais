@@ -295,11 +295,6 @@ module.exports = function createPlugin(app) {
             aisOut(encMsg240);
             aisOut(encMsg241);
           }
-          if (i === 0) {
-            console.log(encMsg18)
-            console.log(encMsg240)
-            console.log(encMsg241)
-          }
         }
         const dateobj = new Date(Date.now());
         const date = dateobj.toISOString();
