@@ -32,6 +32,7 @@ module.exports = function createPlugin(app) {
   plugin.description = 'SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications';
 
   let positionUpdate = null;
+  let sendOwn;
   let url;
   let intervalStart;
   let intervalRun;
@@ -64,6 +65,8 @@ module.exports = function createPlugin(app) {
       });
 
     positionUpdate = options.position_update;
+    sendOwn = options.sendOwn;
+
     app.debug('Plugin started');
 
     function clear() {
@@ -72,7 +75,7 @@ module.exports = function createPlugin(app) {
 
     intervalStart = setInterval(readInfo, (15000));
     setTimeout(clear, 15000);
-    intervalRun = setInterval(readInfo, (positionUpdate * 1000));
+    intervalRun = setInterval(readInfo, (positionUpdate * 60000));
   };
 
   //----------------------------------------------------------------------------
@@ -122,7 +125,7 @@ module.exports = function createPlugin(app) {
   //----------------------------------------------------------------------------
   // Read and parse AIS data
 
-  readInfo = function readData() {
+  readInfo = function readData(options) {
     let i, mmsi, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
     let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
     fetch(url, { method: 'GET' })
@@ -207,6 +210,9 @@ module.exports = function createPlugin(app) {
 
           if (i === 0) {
             own = true;
+            if (sendOwn) {
+              ais = 'B';
+            }
           } else {
             own = false;
           }
@@ -243,6 +249,7 @@ module.exports = function createPlugin(app) {
           };
 
           encMsg18 = {
+            own,
             aistype: 18, // class B position report
             repeat: 0,
             mmsi,
@@ -255,6 +262,7 @@ module.exports = function createPlugin(app) {
           };
 
           encMsg240 = {
+            own,
             aistype: 24, // class B static
             repeat: 0,
             part: 0,
@@ -263,6 +271,7 @@ module.exports = function createPlugin(app) {
           };
 
           encMsg241 = {
+            own,
             aistype: 24, // class B static
             repeat: 0,
             part: 1,
@@ -285,6 +294,11 @@ module.exports = function createPlugin(app) {
             aisOut(encMsg18);
             aisOut(encMsg240);
             aisOut(encMsg241);
+          }
+          if (i === 0) {
+            console.log(encMsg18)
+            console.log(encMsg240)
+            console.log(encMsg241)
           }
         }
         const dateobj = new Date(Date.now());
@@ -310,9 +324,14 @@ module.exports = function createPlugin(app) {
     type: 'object',
     properties: {
       position_update: {
-        type: 'integer',
-        default: 10,
-        title: 'How often AIS data is sent to NMEA0183 out (in seconds)',
+        type: 'number',
+        default: 1,
+        title: 'How often AIS data is sent to NMEA0183 out (in minutes). E.g. 0.5 = 30s, 1 = 1min',
+      },
+      sendOwn: {
+        type: 'boolean',
+        title: 'Send own AIS data, VDO',
+        default: true
       },
     },
   };
