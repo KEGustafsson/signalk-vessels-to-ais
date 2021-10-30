@@ -14,7 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "node-fetch": "^2.6.0",
-    "ggencoder": "^1.0.4"
+    "ggencoder": "^1.0.5"
   },
   "devDependencies": {
     "eslint": "^7.17.0",
