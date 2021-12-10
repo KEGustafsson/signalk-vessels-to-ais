@@ -174,7 +174,7 @@ module.exports = function createPlugin(app) {
             }
           } catch (error) { callSign = ''; }
           try {
-            imo = (jsonContent[jsonKey].registrations.imo).substring(4, 20);
+            imo = (jsonContent[jsonKey].registrations.value.imo).substring(4, 20);
           } catch (error) { imo = null; }
           try {
             id = jsonContent[jsonKey].design.aisShipType.value.id;
