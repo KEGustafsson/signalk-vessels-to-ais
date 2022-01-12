@@ -24,6 +24,7 @@ SOFTWARE.
 
 const fetch = require('node-fetch');
 const AisEncode = require('ggencoder').AisEncode;
+const moment = require('moment');
 
 module.exports = function createPlugin(app) {
   const plugin = {};
@@ -39,7 +40,12 @@ module.exports = function createPlugin(app) {
   let readInfo;
   const setStatus = app.setPluginStatus || app.setProviderStatus;
 
+  let position_update;
+  let useTag;
+
   plugin.start = function (options, restartPlugin) {
+    position_update = options.position_update * 60;
+    useTag = options.useTag;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     url = 'https://localhost:3443/signalk/v1/api/vessels';
     fetch(url, { method: 'GET' })
@@ -113,20 +119,62 @@ module.exports = function createPlugin(app) {
   //----------------------------------------------------------------------------
   // nmea out
 
-  function aisOut(encMsg) {
+  function aisOut(encMsg, aisTime) {
     const enc = new AisEncode(encMsg);
     const sentence = enc.nmea;
+    let taggString = '';
+    if (useTag) {
+      taggString = createTagBlock(aisTime)
+    } 
     if (sentence && sentence.length > 0) {
-      app.debug(sentence);
-      app.emit('nmea0183out', sentence);
+      app.debug(taggString+sentence);
+      app.emit('nmea0183out', taggString+sentence);
     }
+  }
+
+  const m_hex = [
+    '0',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F'
+  ]
+  
+  function toHexString (v) {
+    let msn = (v >> 4) & 0x0f
+    let lsn = (v >> 0) & 0x0f
+    return m_hex[msn] + m_hex[lsn]
+  }
+
+  function createTagBlock (aisTime) {
+    let tagBlock = ''
+    tagBlock += 's:SK0001,'
+    //tagBlock += 'c:' + aisTime + ','
+    tagBlock += 'c:' + Date.now(aisTime) + ','
+    tagBlock = tagBlock.slice(0, - 1)
+    let tagBlockChecksum = 0
+    for (let i = 0; i < tagBlock.length; i++) {
+      tagBlockChecksum ^= tagBlock.charCodeAt(i)
+    }
+    return `\\${tagBlock}*` + toHexString(tagBlockChecksum) + `\\`
   }
 
   //----------------------------------------------------------------------------
   // Read and parse AIS data
 
   readInfo = function readData(options) {
-    let i, mmsi, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
+    let i, mmsi, aisTime, aisDelay, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
     let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
     fetch(url, { method: 'GET' })
       .then((res) => res.json())
@@ -136,6 +184,23 @@ module.exports = function createPlugin(app) {
         for (i = 0; i < numberAIS; i++) {
           const jsonKey = Object.keys(jsonContent)[i];
 
+          try {
+            aisTime = jsonContent[jsonKey].sensors.ais.class.timestamp;
+            if ((parseFloat((moment(new Date(Date.now())).diff(aisTime)/1000).toFixed(3))) < position_update) {
+              aisDelay = true;
+            } else {
+              aisDelay = false;
+            }
+          } catch (error) {
+            if (i === 0) {
+              aisTime = new Date(Date.now()).toISOString();
+              console.log("Oma aika: ", aisTime);
+              aisDelay = true;
+            } else {
+              aisTime = null;
+              aisDelay = false;
+            }
+          }
           try {
             mmsi = jsonContent[jsonKey].mmsi;
           } catch (error) { mmsi = null; }
@@ -174,7 +239,7 @@ module.exports = function createPlugin(app) {
             }
           } catch (error) { callSign = ''; }
           try {
-            imo = (jsonContent[jsonKey].registrations.value.imo).substring(4, 20);
+            imo = (jsonContent[jsonKey].registrations.imo).substring(4, 20);
           } catch (error) { imo = null; }
           try {
             id = jsonContent[jsonKey].design.aisShipType.value.id;
@@ -284,16 +349,18 @@ module.exports = function createPlugin(app) {
             dimD: beam,
           };
 
-          if (ais === 'A') {
-            app.debug(`class A ${i}`);
-            aisOut(encMsg3);
-            aisOut(encMsg5);
-          }
-          if (ais === 'B') {
-            app.debug(`class B ${i}`);
-            aisOut(encMsg18);
-            aisOut(encMsg240);
-            aisOut(encMsg241);
+          if (aisDelay) {
+            if (ais === 'A') {
+              app.debug(`class A ${i}, time: ${aisTime}`);
+              aisOut(encMsg3, aisTime);
+              aisOut(encMsg5, aisTime);
+            }
+            if (ais === 'B') {
+              app.debug(`class B ${i}, time: ${aisTime}`);
+              aisOut(encMsg18, aisTime);
+              aisOut(encMsg240, aisTime);
+              aisOut(encMsg241, aisTime);
+            }
           }
         }
         const dateobj = new Date(Date.now());
@@ -327,6 +394,11 @@ module.exports = function createPlugin(app) {
         type: 'boolean',
         title: 'Send own AIS data, VDO',
         default: true
+      },
+      useTag: {
+        type: 'boolean',
+        title: 'Add Tag-block',
+        default: false
       },
     },
   };
