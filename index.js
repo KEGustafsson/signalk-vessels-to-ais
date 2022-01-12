@@ -35,6 +35,8 @@ module.exports = function createPlugin(app) {
   let positionUpdate = null;
   let sendOwn;
   let url;
+  const portSec = 3443;
+  const port = 3000;
   let intervalStart;
   let intervalRun;
   let readInfo;
@@ -47,7 +49,7 @@ module.exports = function createPlugin(app) {
     position_update = options.position_update * 60;
     useTag = options.useTag;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    url = 'https://localhost:3443/signalk/v1/api/vessels';
+    url = 'https://localhost:' + portSec + '/signalk/v1/api/vessels';
     fetch(url, { method: 'GET' })
       .then((res) => {
         console.log(`${plugin.id}: SSL enabled, using https`);
@@ -57,7 +59,7 @@ module.exports = function createPlugin(app) {
         }
       })
       .catch(() => {
-        url = 'http://localhost:3000/signalk/v1/api/vessels';
+        url = 'http://localhost:' + port + '/signalk/v1/api/vessels';
         fetch(url, { method: 'GET' })
           .then((res) => {
             console.log(`${plugin.id}: SSL disabled, using http`);
