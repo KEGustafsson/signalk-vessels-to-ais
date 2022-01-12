@@ -24,8 +24,6 @@ SOFTWARE.
 
 const fetch = require('node-fetch');
 const AisEncode = require('ggencoder').AisEncode;
-const moment = require('moment');
-const haversine = require('haversine-distance');
 
 module.exports = function createPlugin(app) {
   const plugin = {};
@@ -34,21 +32,16 @@ module.exports = function createPlugin(app) {
   plugin.description = 'SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications';
 
   let positionUpdate = null;
-  let distance;
   let sendOwn;
   let url;
+  let intervalStart;
   let intervalRun;
   let readInfo;
   const setStatus = app.setPluginStatus || app.setProviderStatus;
 
-  let position_update;
-  let useTag;
-
   plugin.start = function (options, restartPlugin) {
-    position_update = options.position_update * 60;
-    useTag = options.useTag;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    url = 'https://localhost:' + options.portSec + '/signalk/v1/api/vessels';
+    url = 'https://localhost:3443/signalk/v1/api/vessels';
     fetch(url, { method: 'GET' })
       .then((res) => {
         console.log(`${plugin.id}: SSL enabled, using https`);
@@ -58,7 +51,7 @@ module.exports = function createPlugin(app) {
         }
       })
       .catch(() => {
-        url = 'http://localhost:' + options.port + '/signalk/v1/api/vessels';
+        url = 'http://localhost:3000/signalk/v1/api/vessels';
         fetch(url, { method: 'GET' })
           .then((res) => {
             console.log(`${plugin.id}: SSL disabled, using http`);
@@ -72,11 +65,16 @@ module.exports = function createPlugin(app) {
       });
 
     positionUpdate = options.position_update;
-    distance = options.distance;
     sendOwn = options.sendOwn;
 
     app.debug('Plugin started');
 
+    function clear() {
+      clearInterval(intervalStart);
+    }
+
+    intervalStart = setInterval(readInfo, (15000));
+    setTimeout(clear, 15000);
     intervalRun = setInterval(readInfo, (positionUpdate * 60000));
   };
 
@@ -115,65 +113,21 @@ module.exports = function createPlugin(app) {
   //----------------------------------------------------------------------------
   // nmea out
 
-  function aisOut(encMsg, aisTime) {
+  function aisOut(encMsg) {
     const enc = new AisEncode(encMsg);
     const sentence = enc.nmea;
-    let taggString = '';
-    if (useTag) {
-      taggString = createTagBlock(aisTime)
-    } 
     if (sentence && sentence.length > 0) {
-      app.debug(taggString+sentence);
-      app.emit('nmea0183out', taggString+sentence);
+      app.debug(sentence);
+      app.emit('nmea0183out', sentence);
     }
-  }
-
-  const m_hex = [
-    '0',
-    '1',
-    '2',
-    '3',
-    '4',
-    '5',
-    '6',
-    '7',
-    '8',
-    '9',
-    'A',
-    'B',
-    'C',
-    'D',
-    'E',
-    'F'
-  ]
-  
-  function toHexString (v) {
-    let msn = (v >> 4) & 0x0f
-    let lsn = (v >> 0) & 0x0f
-    return m_hex[msn] + m_hex[lsn]
-  }
-
-  function createTagBlock (aisTime) {
-    let tagBlock = ''
-    tagBlock += 's:SK0001,'
-    //tagBlock += 'c:' + aisTime + ','
-    tagBlock += 'c:' + Date.now(aisTime) + ','
-    tagBlock = tagBlock.slice(0, - 1)
-    let tagBlockChecksum = 0
-    for (let i = 0; i < tagBlock.length; i++) {
-      tagBlockChecksum ^= tagBlock.charCodeAt(i)
-    }
-    return `\\${tagBlock}*` + toHexString(tagBlockChecksum) + `\\`
   }
 
   //----------------------------------------------------------------------------
   // Read and parse AIS data
 
   readInfo = function readData(options) {
-    let i, mmsi, aisTime, aisDelay, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
+    let i, mmsi, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
     let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
-    let ownLat = app.getSelfPath('navigation.position.value.latitude');
-    let ownLon = app.getSelfPath('navigation.position.value.longitude');
     fetch(url, { method: 'GET' })
       .then((res) => res.json())
       .then((json) => {
@@ -182,22 +136,6 @@ module.exports = function createPlugin(app) {
         for (i = 0; i < numberAIS; i++) {
           const jsonKey = Object.keys(jsonContent)[i];
 
-          try {
-            aisTime = jsonContent[jsonKey].sensors.ais.class.timestamp;
-            if ((parseFloat((moment(new Date(Date.now())).diff(aisTime)/1000).toFixed(3))) < position_update) {
-              aisDelay = true;
-            } else {
-              aisDelay = false;
-            }
-          } catch (error) {
-            if (i === 0) {
-              aisTime = new Date(Date.now()).toISOString();
-              aisDelay = true;
-            } else {
-              aisTime = null;
-              aisDelay = false;
-            }
-          }
           try {
             mmsi = jsonContent[jsonKey].mmsi;
           } catch (error) { mmsi = null; }
@@ -273,103 +211,89 @@ module.exports = function createPlugin(app) {
           if (i === 0) {
             own = true;
             if (sendOwn) {
-              ais = 'A';
-            } else {
-              ais = '';
+              ais = 'B';
             }
           } else {
             own = false;
           }
 
-          const a = { lat: ownLat, lon: ownLon }
-          const b = { lat: lat, lon: lon }
-          let dist = (haversine(a, b)/1000).toFixed(2);
+          encMsg3 = {
+            own,
+            aistype: 3, // class A position report
+            repeat: 0,
+            mmsi,
+            navstatus: navStat,
+            sog,
+            lon,
+            lat,
+            cog,
+            hdg,
+            rot,
+          };
 
-          if (dist <= distance) {
-            
-            encMsg3 = {
-              own,
-              aistype: 3, // class A position report
-              repeat: 0,
-              mmsi,
-              navstatus: navStat,
-              sog,
-              lon,
-              lat,
-              cog,
-              hdg,
-              rot,
-            };
-  
-            encMsg5 = {
-              own,
-              aistype: 5, // class A static
-              repeat: 0,
-              mmsi,
-              imo,
-              cargo: id,
-              callsign: callSign,
-              shipname: shipName,
-              draught: draftCur,
-              destination: dst,
-              dimA: 0,
-              dimB: length,
-              dimC: beam,
-              dimD: beam,
-            };
-  
-            encMsg18 = {
-              own,
-              aistype: 18, // class B position report
-              repeat: 0,
-              mmsi,
-              sog,
-              accuracy: 0,
-              lon,
-              lat,
-              cog,
-              hdg,
-            };
-  
-            encMsg240 = {
-              own,
-              aistype: 24, // class B static
-              repeat: 0,
-              part: 0,
-              mmsi,
-              shipname: shipName,
-            };
-  
-            encMsg241 = {
-              own,
-              aistype: 24, // class B static
-              repeat: 0,
-              part: 1,
-              mmsi,
-              cargo: id,
-              callsign: callSign,
-              dimA: 0,
-              dimB: length,
-              dimC: beam,
-              dimD: beam,
-            };
-  
-            if (aisDelay && (ais === 'A' || ais === 'B')) {
-              app.debug("Distance range: " + distance + "km, AIS target distance: "  + dist + "km" + ", Class " + ais + " Vessel" + ", MMSI:" + mmsi)
-              if (ais === 'A') {
-                app.debug(`class A, ${i}, time: ${aisTime}`);
-                aisOut(encMsg3, aisTime);
-                aisOut(encMsg5, aisTime);
-              }
-              if (ais === 'B') {
-                app.debug(`class B, ${i}, time: ${aisTime}`);
-                aisOut(encMsg18, aisTime);
-                aisOut(encMsg240, aisTime);
-                aisOut(encMsg241, aisTime);
-              }
-              app.debug("--------------------------------------------------------");
+          encMsg5 = {
+            own,
+            aistype: 5, // class A static
+            repeat: 0,
+            mmsi,
+            imo,
+            cargo: id,
+            callsign: callSign,
+            shipname: shipName,
+            draught: draftCur,
+            destination: dst,
+            dimA: 0,
+            dimB: length,
+            dimC: beam,
+            dimD: beam,
+          };
 
-            }
+          encMsg18 = {
+            own,
+            aistype: 18, // class B position report
+            repeat: 0,
+            mmsi,
+            sog,
+            accuracy: 0,
+            lon,
+            lat,
+            cog,
+            hdg,
+          };
+
+          encMsg240 = {
+            own,
+            aistype: 24, // class B static
+            repeat: 0,
+            part: 0,
+            mmsi,
+            shipname: shipName,
+          };
+
+          encMsg241 = {
+            own,
+            aistype: 24, // class B static
+            repeat: 0,
+            part: 1,
+            mmsi,
+            cargo: id,
+            callsign: callSign,
+            dimA: 0,
+            dimB: length,
+            dimC: beam,
+            dimD: beam,
+          };
+
+          if (ais === 'A') {
+            app.debug(`class A ${i}`);
+            aisOut(encMsg3);
+            aisOut(encMsg5);
+          }
+          if (ais === 'B') {
+            app.debug(`class B ${i}`);
+            aisOut(encMsg18);
+            aisOut(encMsg240);
+            aisOut(encMsg241);
           }
         }
         const dateobj = new Date(Date.now());
@@ -399,30 +323,10 @@ module.exports = function createPlugin(app) {
         default: 1,
         title: 'How often AIS data is sent to NMEA0183 out (in minutes). E.g. 0.5 = 30s, 1 = 1min',
       },
-      port: {
-        type: 'number',
-        title: 'HTTP port',
-        default: 3000
-      },
-      portSec: {
-        type: 'number',
-        title: 'HTTPS port',
-        default: 3443
-      },
       sendOwn: {
         type: 'boolean',
         title: 'Send own AIS data, VDO',
         default: true
-      },
-      useTag: {
-        type: 'boolean',
-        title: 'Add Tag-block',
-        default: false
-      },
-      distance: {
-        type: 'integer',
-        default: 100,
-        title: 'AIS target within range [km]',
       },
     },
   };
