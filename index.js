@@ -37,8 +37,6 @@ module.exports = function createPlugin(app) {
   let distance;
   let sendOwn;
   let url;
-  const portSec = 3911;
-  const port = 3901;
   let intervalRun;
   let readInfo;
   const setStatus = app.setPluginStatus || app.setProviderStatus;
@@ -50,7 +48,7 @@ module.exports = function createPlugin(app) {
     position_update = options.position_update * 60;
     useTag = options.useTag;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    url = 'https://localhost:' + portSec + '/signalk/v1/api/vessels';
+    url = 'https://localhost:' + options.portSec + '/signalk/v1/api/vessels';
     fetch(url, { method: 'GET' })
       .then((res) => {
         console.log(`${plugin.id}: SSL enabled, using https`);
@@ -60,7 +58,7 @@ module.exports = function createPlugin(app) {
         }
       })
       .catch(() => {
-        url = 'http://localhost:' + port + '/signalk/v1/api/vessels';
+        url = 'http://localhost:' + options.port + '/signalk/v1/api/vessels';
         fetch(url, { method: 'GET' })
           .then((res) => {
             console.log(`${plugin.id}: SSL disabled, using http`);
@@ -400,6 +398,16 @@ module.exports = function createPlugin(app) {
         type: 'number',
         default: 1,
         title: 'How often AIS data is sent to NMEA0183 out (in minutes). E.g. 0.5 = 30s, 1 = 1min',
+      },
+      port: {
+        type: 'number',
+        title: 'HTTP port',
+        default: 3000
+      },
+      portSec: {
+        type: 'number',
+        title: 'HTTPS port',
+        default: 3443
       },
       sendOwn: {
         type: 'boolean',
