@@ -194,7 +194,6 @@ module.exports = function createPlugin(app) {
           } catch (error) {
             if (i === 0) {
               aisTime = new Date(Date.now()).toISOString();
-              console.log("Oma aika: ", aisTime);
               aisDelay = true;
             } else {
               aisTime = null;
