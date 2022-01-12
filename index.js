@@ -47,8 +47,12 @@ module.exports = function createPlugin(app) {
   plugin.start = function (options, restartPlugin) {
     position_update = options.position_update * 60;
     useTag = options.useTag;
+
+    let port = options.port || 3000;
+    let portSec = options.portSec || 3443;
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    url = 'https://localhost:' + options.portSec + '/signalk/v1/api/vessels';
+    url = 'https://localhost:' + portSec + '/signalk/v1/api/vessels';
     fetch(url, { method: 'GET' })
       .then((res) => {
         console.log(`${plugin.id}: SSL enabled, using https`);
@@ -58,7 +62,7 @@ module.exports = function createPlugin(app) {
         }
       })
       .catch(() => {
-        url = 'http://localhost:' + options.port + '/signalk/v1/api/vessels';
+        url = 'http://localhost:' + port + '/signalk/v1/api/vessels';
         fetch(url, { method: 'GET' })
           .then((res) => {
             console.log(`${plugin.id}: SSL disabled, using http`);
