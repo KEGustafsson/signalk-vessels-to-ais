@@ -13,6 +13,7 @@
   "author": "Karl-Erik Gustafsson",
   "license": "MIT",
   "dependencies": {
+    "haversine-distance": "^1.2.1",
     "moment": "^2.29.1",
     "node-fetch": "^2.6.0",
     "ggencoder": "^1.0.5"

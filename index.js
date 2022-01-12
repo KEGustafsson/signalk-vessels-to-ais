@@ -25,6 +25,7 @@ SOFTWARE.
 const fetch = require('node-fetch');
 const AisEncode = require('ggencoder').AisEncode;
 const moment = require('moment');
+const haversine = require('haversine-distance');
 
 module.exports = function createPlugin(app) {
   const plugin = {};
@@ -33,11 +34,11 @@ module.exports = function createPlugin(app) {
   plugin.description = 'SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications';
 
   let positionUpdate = null;
+  let distance;
   let sendOwn;
   let url;
-  const portSec = 3443;
-  const port = 3000;
-  let intervalStart;
+  const portSec = 3911;
+  const port = 3901;
   let intervalRun;
   let readInfo;
   const setStatus = app.setPluginStatus || app.setProviderStatus;
@@ -73,16 +74,11 @@ module.exports = function createPlugin(app) {
       });
 
     positionUpdate = options.position_update;
+    distance = options.distance;
     sendOwn = options.sendOwn;
 
     app.debug('Plugin started');
 
-    function clear() {
-      clearInterval(intervalStart);
-    }
-
-    intervalStart = setInterval(readInfo, (15000));
-    setTimeout(clear, 15000);
     intervalRun = setInterval(readInfo, (positionUpdate * 60000));
   };
 
@@ -178,6 +174,8 @@ module.exports = function createPlugin(app) {
   readInfo = function readData(options) {
     let i, mmsi, aisTime, aisDelay, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
     let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
+    let ownLat = app.getSelfPath('navigation.position.value.latitude');
+    let ownLon = app.getSelfPath('navigation.position.value.longitude');
     fetch(url, { method: 'GET' })
       .then((res) => res.json())
       .then((json) => {
@@ -240,7 +238,7 @@ module.exports = function createPlugin(app) {
             }
           } catch (error) { callSign = ''; }
           try {
-            imo = (jsonContent[jsonKey].registrations.imo).substring(4, 20);
+            imo = (jsonContent[jsonKey].registrations.value.imo).substring(4, 20);
           } catch (error) { imo = null; }
           try {
             id = jsonContent[jsonKey].design.aisShipType.value.id;
@@ -277,90 +275,102 @@ module.exports = function createPlugin(app) {
           if (i === 0) {
             own = true;
             if (sendOwn) {
-              ais = 'B';
+              ais = 'A';
+            } else {
+              ais = '';
             }
           } else {
             own = false;
           }
 
-          encMsg3 = {
-            own,
-            aistype: 3, // class A position report
-            repeat: 0,
-            mmsi,
-            navstatus: navStat,
-            sog,
-            lon,
-            lat,
-            cog,
-            hdg,
-            rot,
-          };
+          const a = { lat: ownLat, lon: ownLon }
+          const b = { lat: lat, lon: lon }
+          let dist = (haversine(a, b)/1000).toFixed(2);
 
-          encMsg5 = {
-            own,
-            aistype: 5, // class A static
-            repeat: 0,
-            mmsi,
-            imo,
-            cargo: id,
-            callsign: callSign,
-            shipname: shipName,
-            draught: draftCur,
-            destination: dst,
-            dimA: 0,
-            dimB: length,
-            dimC: beam,
-            dimD: beam,
-          };
+          if (dist <= distance) {
+            
+            encMsg3 = {
+              own,
+              aistype: 3, // class A position report
+              repeat: 0,
+              mmsi,
+              navstatus: navStat,
+              sog,
+              lon,
+              lat,
+              cog,
+              hdg,
+              rot,
+            };
+  
+            encMsg5 = {
+              own,
+              aistype: 5, // class A static
+              repeat: 0,
+              mmsi,
+              imo,
+              cargo: id,
+              callsign: callSign,
+              shipname: shipName,
+              draught: draftCur,
+              destination: dst,
+              dimA: 0,
+              dimB: length,
+              dimC: beam,
+              dimD: beam,
+            };
+  
+            encMsg18 = {
+              own,
+              aistype: 18, // class B position report
+              repeat: 0,
+              mmsi,
+              sog,
+              accuracy: 0,
+              lon,
+              lat,
+              cog,
+              hdg,
+            };
+  
+            encMsg240 = {
+              own,
+              aistype: 24, // class B static
+              repeat: 0,
+              part: 0,
+              mmsi,
+              shipname: shipName,
+            };
+  
+            encMsg241 = {
+              own,
+              aistype: 24, // class B static
+              repeat: 0,
+              part: 1,
+              mmsi,
+              cargo: id,
+              callsign: callSign,
+              dimA: 0,
+              dimB: length,
+              dimC: beam,
+              dimD: beam,
+            };
+  
+            if (aisDelay && (ais === 'A' || ais === 'B')) {
+              app.debug("Distance range: " + distance + "km, AIS target distance: "  + dist + "km" + ", Class " + ais + " Vessel" + ", MMSI:" + mmsi)
+              if (ais === 'A') {
+                app.debug(`class A, ${i}, time: ${aisTime}`);
+                aisOut(encMsg3, aisTime);
+                aisOut(encMsg5, aisTime);
+              }
+              if (ais === 'B') {
+                app.debug(`class B, ${i}, time: ${aisTime}`);
+                aisOut(encMsg18, aisTime);
+                aisOut(encMsg240, aisTime);
+                aisOut(encMsg241, aisTime);
+              }
+              app.debug("--------------------------------------------------------");
 
-          encMsg18 = {
-            own,
-            aistype: 18, // class B position report
-            repeat: 0,
-            mmsi,
-            sog,
-            accuracy: 0,
-            lon,
-            lat,
-            cog,
-            hdg,
-          };
-
-          encMsg240 = {
-            own,
-            aistype: 24, // class B static
-            repeat: 0,
-            part: 0,
-            mmsi,
-            shipname: shipName,
-          };
-
-          encMsg241 = {
-            own,
-            aistype: 24, // class B static
-            repeat: 0,
-            part: 1,
-            mmsi,
-            cargo: id,
-            callsign: callSign,
-            dimA: 0,
-            dimB: length,
-            dimC: beam,
-            dimD: beam,
-          };
-
-          if (aisDelay) {
-            if (ais === 'A') {
-              app.debug(`class A ${i}, time: ${aisTime}`);
-              aisOut(encMsg3, aisTime);
-              aisOut(encMsg5, aisTime);
-            }
-            if (ais === 'B') {
-              app.debug(`class B ${i}, time: ${aisTime}`);
-              aisOut(encMsg18, aisTime);
-              aisOut(encMsg240, aisTime);
-              aisOut(encMsg241, aisTime);
             }
           }
         }
@@ -400,6 +410,11 @@ module.exports = function createPlugin(app) {
         type: 'boolean',
         title: 'Add Tag-block',
         default: false
+      },
+      distance: {
+        type: 'integer',
+        default: 100,
+        title: 'AIS target within range [km]',
       },
     },
   };
