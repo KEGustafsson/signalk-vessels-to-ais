@@ -13,7 +13,7 @@
   "author": "Karl-Erik Gustafsson",
   "license": "MIT",
   "dependencies": {
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^3.1.1",
     "ggencoder": "^1.0.5"
   },
   "devDependencies": {
