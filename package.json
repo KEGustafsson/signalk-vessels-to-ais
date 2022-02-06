@@ -15,7 +15,7 @@
   "dependencies": {
     "haversine-distance": "^1.2.1",
     "moment": "^2.29.1",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^3.1.1",
     "ggencoder": "^1.0.5"
   },
   "devDependencies": {
