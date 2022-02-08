@@ -9,6 +9,7 @@ User can configure:
 - Own data can be added to AIS sending
 
 New:
+- v1.2.0, updated fetch method, no need for NODE_TLS_REJECT_UNAUTHORIZED=0 anymore
 - v1.1.5, updated vessels within selected timeframe are sent out, radius filtering around own vessel and tag-block option added
 - v1.1.4, small fix
 - v1.1.3, add: own vessel data and sending interval modified
