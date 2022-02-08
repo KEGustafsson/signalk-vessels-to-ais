@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const https = require('https');
 const AisEncode = require('ggencoder').AisEncode;
 const moment = require('moment');
 const haversine = require('haversine-distance');
@@ -38,22 +39,31 @@ module.exports = function createPlugin(app) {
   let sendOwn;
   let url;
   let intervalRun;
-  let readInfo;
   const setStatus = app.setPluginStatus || app.setProviderStatus;
 
   let position_update;
   let useTag;
 
+  const httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+  });
+
+  let getParam;
+
   plugin.start = function (options, restartPlugin) {
     position_update = options.position_update * 60;
     useTag = options.useTag;
 
+    positionUpdate = options.position_update;
+    distance = options.distance;
+    sendOwn = options.sendOwn;
+
     let port = options.port || 3000;
     let portSec = options.portSec || 3443;
 
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     url = 'https://localhost:' + portSec + '/signalk/v1/api/vessels';
-    fetch(url, { method: 'GET' })
+    getParam = { method: 'GET', agent: httpsAgent };
+    fetch(url, getParam)
       .then((res) => {
         console.log(`${plugin.id}: SSL enabled, using https`);
         if (!res.ok) {
@@ -63,7 +73,8 @@ module.exports = function createPlugin(app) {
       })
       .catch(() => {
         url = 'http://localhost:' + port + '/signalk/v1/api/vessels';
-        fetch(url, { method: 'GET' })
+        getParam = { method: 'GET' };
+        fetch(url, getParam)
           .then((res) => {
             console.log(`${plugin.id}: SSL disabled, using http`);
             if (!res.ok) {
@@ -71,17 +82,13 @@ module.exports = function createPlugin(app) {
               setStatus("Error accessing server. Check 'Allow Readonly Access' and enable it");
             }
           })
-          .catch(() => {
-          });
+      })
+      .finally(() => {
+        intervalRun = setInterval(readData, (positionUpdate * 60000), getParam);
       });
-
-    positionUpdate = options.position_update;
-    distance = options.distance;
-    sendOwn = options.sendOwn;
 
     app.debug('Plugin started');
 
-    intervalRun = setInterval(readInfo, (positionUpdate * 60000));
   };
 
   //----------------------------------------------------------------------------
@@ -173,219 +180,219 @@ module.exports = function createPlugin(app) {
   //----------------------------------------------------------------------------
   // Read and parse AIS data
 
-  readInfo = function readData(options) {
-    let i, mmsi, aisTime, aisDelay, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
-    let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
-    let ownLat = app.getSelfPath('navigation.position.value.latitude');
-    let ownLon = app.getSelfPath('navigation.position.value.longitude');
-    fetch(url, { method: 'GET' })
-      .then((res) => res.json())
-      .then((json) => {
-        const jsonContent = JSON.parse(JSON.stringify(json));
-        const numberAIS = Object.keys(jsonContent).length;
-        for (i = 0; i < numberAIS; i++) {
-          const jsonKey = Object.keys(jsonContent)[i];
-
-          try {
-            aisTime = jsonContent[jsonKey].sensors.ais.class.timestamp;
-            if ((parseFloat((moment(new Date(Date.now())).diff(aisTime)/1000).toFixed(3))) < position_update) {
-              aisDelay = true;
-            } else {
-              aisDelay = false;
-            }
-          } catch (error) {
-            if (i === 0) {
-              aisTime = new Date(Date.now()).toISOString();
-              aisDelay = true;
-            } else {
-              aisTime = null;
-              aisDelay = false;
-            }
-          }
-          try {
-            mmsi = jsonContent[jsonKey].mmsi;
-          } catch (error) { mmsi = null; }
-          try {
-            shipName = jsonContent[jsonKey].name;
-          } catch (error) { shipName = ''; }
-          try {
-            lat = jsonContent[jsonKey].navigation.position.value.latitude;
-          } catch (error) { lat = null; }
-          try {
-            lon = jsonContent[jsonKey].navigation.position.value.longitude;
-          } catch (error) { lon = null; }
-          try {
-            sog = msToKnots(jsonContent[jsonKey].navigation.speedOverGround.value);
-          } catch (error) { sog = null; }
-          try {
-            cog = radToDegrees(jsonContent[jsonKey].navigation.courseOverGroundTrue.value);
-          } catch (error) { cog = null; }
-          try {
-            rot = radToDegrees(jsonContent[jsonKey].navigation.rateOfTurn.value);
-          } catch (error) { rot = null; }
-          try {
-            navStat = stateMapping[jsonContent[jsonKey].navigation.state.value];
-          } catch (error) { navStat = ''; }
-          try {
-            hdg = radToDegrees(jsonContent[jsonKey].navigation.headingTrue.value);
-          } catch (error) { hdg = null; }
-          try {
-            dst = jsonContent[jsonKey].navigation.destination.commonName.value;
-          } catch (error) { dst = ''; }
-          try {
-            if (i === 0) {
-              callSign = jsonContent[jsonKey].communication.callsignVhf;
-            } else {
-              callSign = jsonContent[jsonKey].communication.value.callsignVhf;
-            }
-          } catch (error) { callSign = ''; }
-          try {
-            imo = (jsonContent[jsonKey].registrations.value.imo).substring(4, 20);
-          } catch (error) { imo = null; }
-          try {
-            id = jsonContent[jsonKey].design.aisShipType.value.id;
-          } catch (error) { id = null; }
-          try {
-            type = jsonContent[jsonKey].design.aisShipType.value.name;
-          } catch (error) { type = ''; }
-          try {
-            draftCur = (jsonContent[jsonKey].design.draft.value.current) / 10;
-          } catch (error) { draftCur = null; }
-          try {
-            length = jsonContent[jsonKey].design.length.value.overall;
-          } catch (error) { length = null; }
-          try {
-            beam = (jsonContent[jsonKey].design.beam.value) / 2;
-          } catch (error) { beam = null; }
-          try {
-            ais = jsonContent[jsonKey].sensors.ais.class.value;
-          } catch (error) { ais = null; }
-
-          if (shipName % 1 === 0) {
-            shipName = '';
-          }
-          if (dst % 1 === 0) {
-            dst = '';
-          }
-          if (callSign % 1 === 0) {
-            callSign = '';
-          }
-          if (type % 1 === 0) {
-            type = '';
-          }
-
-          if (i === 0) {
-            own = true;
-            if (sendOwn) {
-              ais = 'A';
-            } else {
-              ais = '';
-            }
-          } else {
-            own = false;
-          }
-
-          const a = { lat: ownLat, lon: ownLon }
-          const b = { lat: lat, lon: lon }
-          let dist = (haversine(a, b)/1000).toFixed(2);
-
-          if (dist <= distance) {
-            
-            encMsg3 = {
-              own,
-              aistype: 3, // class A position report
-              repeat: 0,
-              mmsi,
-              navstatus: navStat,
-              sog,
-              lon,
-              lat,
-              cog,
-              hdg,
-              rot,
-            };
+  function readData(getParam) {
+      let i, mmsi, aisTime, aisDelay, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
+      let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
+      let ownLat = app.getSelfPath('navigation.position.value.latitude');
+      let ownLon = app.getSelfPath('navigation.position.value.longitude');
+      fetch(url, getParam)
+        .then((res) => res.json())
+        .then((json) => {
+          const jsonContent = JSON.parse(JSON.stringify(json));
+          const numberAIS = Object.keys(jsonContent).length;
+          for (i = 0; i < numberAIS; i++) {
+            const jsonKey = Object.keys(jsonContent)[i];
   
-            encMsg5 = {
-              own,
-              aistype: 5, // class A static
-              repeat: 0,
-              mmsi,
-              imo,
-              cargo: id,
-              callsign: callSign,
-              shipname: shipName,
-              draught: draftCur,
-              destination: dst,
-              dimA: 0,
-              dimB: length,
-              dimC: beam,
-              dimD: beam,
-            };
-  
-            encMsg18 = {
-              own,
-              aistype: 18, // class B position report
-              repeat: 0,
-              mmsi,
-              sog,
-              accuracy: 0,
-              lon,
-              lat,
-              cog,
-              hdg,
-            };
-  
-            encMsg240 = {
-              own,
-              aistype: 24, // class B static
-              repeat: 0,
-              part: 0,
-              mmsi,
-              shipname: shipName,
-            };
-  
-            encMsg241 = {
-              own,
-              aistype: 24, // class B static
-              repeat: 0,
-              part: 1,
-              mmsi,
-              cargo: id,
-              callsign: callSign,
-              dimA: 0,
-              dimB: length,
-              dimC: beam,
-              dimD: beam,
-            };
-  
-            if (aisDelay && (ais === 'A' || ais === 'B')) {
-              app.debug("Distance range: " + distance + "km, AIS target distance: "  + dist + "km" + ", Class " + ais + " Vessel" + ", MMSI:" + mmsi)
-              if (ais === 'A') {
-                app.debug(`class A, ${i}, time: ${aisTime}`);
-                aisOut(encMsg3, aisTime);
-                aisOut(encMsg5, aisTime);
+            try {
+              aisTime = jsonContent[jsonKey].sensors.ais.class.timestamp;
+              if ((parseFloat((moment(new Date(Date.now())).diff(aisTime)/1000).toFixed(3))) < position_update) {
+                aisDelay = true;
+              } else {
+                aisDelay = false;
               }
-              if (ais === 'B') {
-                app.debug(`class B, ${i}, time: ${aisTime}`);
-                aisOut(encMsg18, aisTime);
-                aisOut(encMsg240, aisTime);
-                aisOut(encMsg241, aisTime);
+            } catch (error) {
+              if (i === 0) {
+                aisTime = new Date(Date.now()).toISOString();
+                aisDelay = true;
+              } else {
+                aisTime = null;
+                aisDelay = false;
               }
-              app.debug("--------------------------------------------------------");
-
+            }
+            try {
+              mmsi = jsonContent[jsonKey].mmsi;
+            } catch (error) { mmsi = null; }
+            try {
+              shipName = jsonContent[jsonKey].name;
+            } catch (error) { shipName = ''; }
+            try {
+              lat = jsonContent[jsonKey].navigation.position.value.latitude;
+            } catch (error) { lat = null; }
+            try {
+              lon = jsonContent[jsonKey].navigation.position.value.longitude;
+            } catch (error) { lon = null; }
+            try {
+              sog = msToKnots(jsonContent[jsonKey].navigation.speedOverGround.value);
+            } catch (error) { sog = null; }
+            try {
+              cog = radToDegrees(jsonContent[jsonKey].navigation.courseOverGroundTrue.value);
+            } catch (error) { cog = null; }
+            try {
+              rot = radToDegrees(jsonContent[jsonKey].navigation.rateOfTurn.value);
+            } catch (error) { rot = null; }
+            try {
+              navStat = stateMapping[jsonContent[jsonKey].navigation.state.value];
+            } catch (error) { navStat = ''; }
+            try {
+              hdg = radToDegrees(jsonContent[jsonKey].navigation.headingTrue.value);
+            } catch (error) { hdg = null; }
+            try {
+              dst = jsonContent[jsonKey].navigation.destination.commonName.value;
+            } catch (error) { dst = ''; }
+            try {
+              if (i === 0) {
+                callSign = jsonContent[jsonKey].communication.callsignVhf;
+              } else {
+                callSign = jsonContent[jsonKey].communication.value.callsignVhf;
+              }
+            } catch (error) { callSign = ''; }
+            try {
+              imo = (jsonContent[jsonKey].registrations.value.imo).substring(4, 20);
+            } catch (error) { imo = null; }
+            try {
+              id = jsonContent[jsonKey].design.aisShipType.value.id;
+            } catch (error) { id = null; }
+            try {
+              type = jsonContent[jsonKey].design.aisShipType.value.name;
+            } catch (error) { type = ''; }
+            try {
+              draftCur = (jsonContent[jsonKey].design.draft.value.current) / 10;
+            } catch (error) { draftCur = null; }
+            try {
+              length = jsonContent[jsonKey].design.length.value.overall;
+            } catch (error) { length = null; }
+            try {
+              beam = (jsonContent[jsonKey].design.beam.value) / 2;
+            } catch (error) { beam = null; }
+            try {
+              ais = jsonContent[jsonKey].sensors.ais.class.value;
+            } catch (error) { ais = null; }
+  
+            if (shipName % 1 === 0) {
+              shipName = '';
+            }
+            if (dst % 1 === 0) {
+              dst = '';
+            }
+            if (callSign % 1 === 0) {
+              callSign = '';
+            }
+            if (type % 1 === 0) {
+              type = '';
+            }
+  
+            if (i === 0) {
+              own = true;
+              if (sendOwn) {
+                ais = 'A';
+              } else {
+                ais = '';
+              }
+            } else {
+              own = false;
+            }
+  
+            const a = { lat: ownLat, lon: ownLon }
+            const b = { lat: lat, lon: lon }
+            let dist = (haversine(a, b)/1000).toFixed(2);
+  
+            if (dist <= distance) {
+              
+              encMsg3 = {
+                own,
+                aistype: 3, // class A position report
+                repeat: 0,
+                mmsi,
+                navstatus: navStat,
+                sog,
+                lon,
+                lat,
+                cog,
+                hdg,
+                rot,
+              };
+    
+              encMsg5 = {
+                own,
+                aistype: 5, // class A static
+                repeat: 0,
+                mmsi,
+                imo,
+                cargo: id,
+                callsign: callSign,
+                shipname: shipName,
+                draught: draftCur,
+                destination: dst,
+                dimA: 0,
+                dimB: length,
+                dimC: beam,
+                dimD: beam,
+              };
+    
+              encMsg18 = {
+                own,
+                aistype: 18, // class B position report
+                repeat: 0,
+                mmsi,
+                sog,
+                accuracy: 0,
+                lon,
+                lat,
+                cog,
+                hdg,
+              };
+    
+              encMsg240 = {
+                own,
+                aistype: 24, // class B static
+                repeat: 0,
+                part: 0,
+                mmsi,
+                shipname: shipName,
+              };
+    
+              encMsg241 = {
+                own,
+                aistype: 24, // class B static
+                repeat: 0,
+                part: 1,
+                mmsi,
+                cargo: id,
+                callsign: callSign,
+                dimA: 0,
+                dimB: length,
+                dimC: beam,
+                dimD: beam,
+              };
+    
+              if (aisDelay && (ais === 'A' || ais === 'B')) {
+                app.debug("Distance range: " + distance + "km, AIS target distance: "  + dist + "km" + ", Class " + ais + " Vessel" + ", MMSI:" + mmsi)
+                if (ais === 'A') {
+                  app.debug(`class A, ${i}, time: ${aisTime}`);
+                  aisOut(encMsg3, aisTime);
+                  aisOut(encMsg5, aisTime);
+                }
+                if (ais === 'B') {
+                  app.debug(`class B, ${i}, time: ${aisTime}`);
+                  aisOut(encMsg18, aisTime);
+                  aisOut(encMsg240, aisTime);
+                  aisOut(encMsg241, aisTime);
+                }
+                app.debug("--------------------------------------------------------");
+  
+              }
             }
           }
-        }
-        const dateobj = new Date(Date.now());
-        const date = dateobj.toISOString();
-        app.handleMessage(plugin.id, {
-          context: `vessels.${app.selfId}`,
-          updates: [
-          ],
-        });
-        setStatus(`Number of AIS targets sent: ${numberAIS - 1} (${date})`);
-      })
-      .catch((err) => console.error(err));
+          const dateobj = new Date(Date.now());
+          const date = dateobj.toISOString();
+          app.handleMessage(plugin.id, {
+            context: `vessels.${app.selfId}`,
+            updates: [
+            ],
+          });
+          setStatus(`AIS NMEA message send: ${date}`);
+        })
+        .catch((err) => console.error(err));
   };
 
   //----------------------------------------------------------------------------
