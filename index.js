@@ -195,20 +195,20 @@ module.exports = function createPlugin(app) {
   
             try {
               aisTime = jsonContent[jsonKey].sensors.ais.class.timestamp;
-              if ((parseFloat((moment(new Date(Date.now())).diff(aisTime)/1000).toFixed(3))) < position_update) {
-                aisDelay = true;
-              } else {
-                aisDelay = false;
-              }
             } catch (error) {
               if (i === 0) {
-                aisTime = new Date(Date.now()).toISOString();
-                aisDelay = true;
+                aisTime =  jsonContent[jsonKey].navigation.position.timestamp;
               } else {
                 aisTime = null;
-                aisDelay = false;
               }
             }
+
+            if ((parseFloat((moment(new Date(Date.now())).diff(aisTime)/1000).toFixed(3))) < position_update) {
+              aisDelay = true;
+            } else {
+              aisDelay = false;
+            }
+
             try {
               mmsi = jsonContent[jsonKey].mmsi;
             } catch (error) { mmsi = null; }
