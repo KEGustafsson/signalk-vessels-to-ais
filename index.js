@@ -53,7 +53,7 @@ module.exports = function createPlugin(app) {
   plugin.start = function (options) {
     useTag = options.useTag;
 
-    positionUpdate = options.positionUpdate * 60;
+    positionUpdate = options.position_update * 60;
     distance = options.distance;
     sendOwn = options.sendOwn;
 
@@ -403,7 +403,7 @@ module.exports = function createPlugin(app) {
   plugin.schema = {
     type: 'object',
     properties: {
-      positionUpdate: {
+      position_update: {
         type: 'number',
         default: 1,
         title: 'How often AIS data is sent to NMEA0183 out (in minutes). E.g. 0.5 = 30s, 1 = 1min',
