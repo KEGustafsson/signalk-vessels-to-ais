@@ -205,12 +205,8 @@ module.exports = function createPlugin(app) {
             }
           }
 
-          if ((parseFloat((moment(new Date(Date.now()))
-            .diff(aisTime) / 1000).toFixed(3))) < positionUpdate) {
-            aisDelay = true;
-          } else {
-            aisDelay = false;
-          }
+          aisDelay = (parseFloat((moment(new Date(Date.now()))
+            .diff(aisTime) / 1000).toFixed(3))) < positionUpdate;
 
           try {
             mmsi = jsonContent[jsonKey].mmsi;
