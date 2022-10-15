@@ -23,8 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// eslint-disable-next-line no-shadow
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const fetchNew = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const https = require('https');
 const AisEncode = require('ggencoder').AisEncode;
 const moment = require('moment');
@@ -63,7 +62,7 @@ module.exports = function createPlugin(app) {
 
     url = `https://localhost:${portSec}/signalk/v1/api/vessels`;
     getParam = { method: 'GET', agent: httpsAgent };
-    fetch(url, getParam)
+    fetchNew(url, getParam)
       .then((res) => {
         console.log(`${plugin.id}: SSL enabled, using https`);
         if (!res.ok) {
@@ -74,7 +73,7 @@ module.exports = function createPlugin(app) {
       .catch(() => {
         url = `http://localhost:${port}/signalk/v1/api/vessels`;
         getParam = { method: 'GET' };
-        fetch(url, getParam)
+        fetchNew(url, getParam)
           .then((res) => {
             console.log(`${plugin.id}: SSL disabled, using http`);
             if (!res.ok) {
@@ -188,7 +187,7 @@ module.exports = function createPlugin(app) {
     let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
     const ownLat = app.getSelfPath('navigation.position.value.latitude');
     const ownLon = app.getSelfPath('navigation.position.value.longitude');
-    fetch(url, getParam)
+    fetchNew(url, getParam)
       .then((res) => res.json())
       .then((json) => {
         const jsonContent = JSON.parse(JSON.stringify(json));
