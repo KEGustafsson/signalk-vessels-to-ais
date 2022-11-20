@@ -1,6 +1,6 @@
 {
   "name": "signalk-vessels-to-ais",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications",
   "main": "index.js",
   "scripts": {
