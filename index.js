@@ -1,3 +1,4 @@
+/* eslint-disable no-bitwise */
 /*
 MIT License
 
@@ -22,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetchNew = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const https = require('https');
 const AisEncode = require('ggencoder').AisEncode;
 const moment = require('moment');
@@ -41,7 +42,6 @@ module.exports = function createPlugin(app) {
   let intervalRun;
   const setStatus = app.setPluginStatus || app.setProviderStatus;
 
-  let position_update;
   let useTag;
 
   const httpsAgent = new https.Agent({
@@ -50,20 +50,19 @@ module.exports = function createPlugin(app) {
 
   let getParam;
 
-  plugin.start = function (options, restartPlugin) {
-    position_update = options.position_update * 60;
+  plugin.start = function (options) {
     useTag = options.useTag;
 
-    positionUpdate = options.position_update;
+    positionUpdate = options.position_update * 60;
     distance = options.distance;
     sendOwn = options.sendOwn;
 
-    let port = options.port || 3000;
-    let portSec = options.portSec || 3443;
+    const port = options.port || 3000;
+    const portSec = options.portSec || 3443;
 
-    url = 'https://localhost:' + portSec + '/signalk/v1/api/vessels';
+    url = `https://localhost:${portSec}/signalk/v1/api/vessels`;
     getParam = { method: 'GET', agent: httpsAgent };
-    fetch(url, getParam)
+    fetchNew(url, getParam)
       .then((res) => {
         console.log(`${plugin.id}: SSL enabled, using https`);
         if (!res.ok) {
@@ -72,23 +71,23 @@ module.exports = function createPlugin(app) {
         }
       })
       .catch(() => {
-        url = 'http://localhost:' + port + '/signalk/v1/api/vessels';
+        url = `http://localhost:${port}/signalk/v1/api/vessels`;
         getParam = { method: 'GET' };
-        fetch(url, getParam)
+        fetchNew(url, getParam)
           .then((res) => {
             console.log(`${plugin.id}: SSL disabled, using http`);
             if (!res.ok) {
               console.error(`${plugin.id}: SSL disabled, but error accessing server. Check 'Allow Readonly Access' and enable it.`);
               setStatus("Error accessing server. Check 'Allow Readonly Access' and enable it");
             }
-          })
+          });
       })
       .finally(() => {
-        intervalRun = setInterval(readData, (positionUpdate * 60000), getParam);
+        // eslint-disable-next-line no-use-before-define
+        intervalRun = setInterval(readData, (positionUpdate * 1000), getParam);
       });
 
     app.debug('Plugin started');
-
   };
 
   //----------------------------------------------------------------------------
@@ -131,15 +130,16 @@ module.exports = function createPlugin(app) {
     const sentence = enc.nmea;
     let taggString = '';
     if (useTag) {
-      taggString = createTagBlock(aisTime)
-    } 
+      // eslint-disable-next-line no-use-before-define
+      taggString = createTagBlock(aisTime);
+    }
     if (sentence && sentence.length > 0) {
-      app.debug(taggString+sentence);
-      app.emit('nmea0183out', taggString+sentence);
+      app.debug(taggString + sentence);
+      app.emit('nmea0183out', taggString + sentence);
     }
   }
 
-  const m_hex = [
+  const mHex = [
     '0',
     '1',
     '2',
@@ -155,59 +155,59 @@ module.exports = function createPlugin(app) {
     'C',
     'D',
     'E',
-    'F'
-  ]
-  
-  function toHexString (v) {
-    let msn = (v >> 4) & 0x0f
-    let lsn = (v >> 0) & 0x0f
-    return m_hex[msn] + m_hex[lsn]
+    'F',
+  ];
+
+  function toHexString(v) {
+    const msn = (v >> 4) & 0x0f;
+    const lsn = (v >> 0) & 0x0f;
+    return mHex[msn] + mHex[lsn];
   }
 
-  function createTagBlock (aisTime) {
-    let tagBlock = ''
-    tagBlock += 's:SK0001,'
-    //tagBlock += 'c:' + aisTime + ','
-    tagBlock += 'c:' + Date.now(aisTime) + ','
-    tagBlock = tagBlock.slice(0, - 1)
-    let tagBlockChecksum = 0
+  function createTagBlock(aisTime) {
+    let tagBlock = '';
+    tagBlock += 's:SK0001,';
+    // tagBlock += 'c:' + aisTime + ','
+    tagBlock += `c:${Date.now(aisTime)},`;
+    tagBlock = tagBlock.slice(0, -1);
+    let tagBlockChecksum = 0;
     for (let i = 0; i < tagBlock.length; i++) {
-      tagBlockChecksum ^= tagBlock.charCodeAt(i)
+      tagBlockChecksum ^= tagBlock.charCodeAt(i);
     }
-    return `\\${tagBlock}*` + toHexString(tagBlockChecksum) + `\\`
+    return `\\${tagBlock}*${toHexString(tagBlockChecksum)}\\`;
   }
 
   //----------------------------------------------------------------------------
   // Read and parse AIS data
 
+  // eslint-disable-next-line no-shadow
   function readData(getParam) {
-      let i, mmsi, aisTime, aisDelay, shipName, lat, lon, sog, cog, rot, navStat, hdg, dst, callSign, imo, id, type;
-      let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
-      let ownLat = app.getSelfPath('navigation.position.value.latitude');
-      let ownLon = app.getSelfPath('navigation.position.value.longitude');
-      fetch(url, getParam)
+    let i, mmsi, aisTime, aisDelay, shipName, lat, lon, sog, cog, rot;
+    let navStat, hdg, dst, callSign, imo, id, type;
+    let draftCur, length, beam, ais, encMsg3, encMsg5, encMsg18, encMsg240, encMsg241, own;
+    const ownLat = app.getSelfPath('navigation.position.value.latitude');
+    const ownLon = app.getSelfPath('navigation.position.value.longitude');
+    if (typeof ownLat !== "undefined" && typeof ownLon !== "undefined") {
+      fetchNew(url, getParam)
         .then((res) => res.json())
         .then((json) => {
           const jsonContent = JSON.parse(JSON.stringify(json));
           const numberAIS = Object.keys(jsonContent).length;
           for (i = 0; i < numberAIS; i++) {
             const jsonKey = Object.keys(jsonContent)[i];
-  
+
             try {
               aisTime = jsonContent[jsonKey].sensors.ais.class.timestamp;
             } catch (error) {
               if (i === 0) {
-                aisTime =  jsonContent[jsonKey].navigation.position.timestamp;
+                aisTime = jsonContent[jsonKey].navigation.position.timestamp;
               } else {
                 aisTime = null;
               }
             }
 
-            if ((parseFloat((moment(new Date(Date.now())).diff(aisTime)/1000).toFixed(3))) < position_update) {
-              aisDelay = true;
-            } else {
-              aisDelay = false;
-            }
+            aisDelay = (parseFloat((moment(new Date(Date.now()))
+              .diff(aisTime) / 1000).toFixed(3))) < positionUpdate;
 
             try {
               mmsi = jsonContent[jsonKey].mmsi;
@@ -267,7 +267,7 @@ module.exports = function createPlugin(app) {
             try {
               ais = jsonContent[jsonKey].sensors.ais.class.value;
             } catch (error) { ais = null; }
-  
+
             if (shipName % 1 === 0) {
               shipName = '';
             }
@@ -280,7 +280,7 @@ module.exports = function createPlugin(app) {
             if (type % 1 === 0) {
               type = '';
             }
-  
+
             if (i === 0) {
               own = true;
               if (sendOwn) {
@@ -291,13 +291,12 @@ module.exports = function createPlugin(app) {
             } else {
               own = false;
             }
-  
-            const a = { lat: ownLat, lon: ownLon }
-            const b = { lat: lat, lon: lon }
-            let dist = (haversine(a, b)/1000).toFixed(2);
-  
+
+            const a = { lat: ownLat, lon: ownLon };
+            const b = { lat, lon };
+            const dist = (haversine(a, b) / 1000).toFixed(2);
+
             if (dist <= distance) {
-              
               encMsg3 = {
                 own,
                 aistype: 3, // class A position report
@@ -311,7 +310,7 @@ module.exports = function createPlugin(app) {
                 hdg,
                 rot,
               };
-    
+
               encMsg5 = {
                 own,
                 aistype: 5, // class A static
@@ -328,7 +327,7 @@ module.exports = function createPlugin(app) {
                 dimC: beam,
                 dimD: beam,
               };
-    
+
               encMsg18 = {
                 own,
                 aistype: 18, // class B position report
@@ -341,7 +340,7 @@ module.exports = function createPlugin(app) {
                 cog,
                 hdg,
               };
-    
+
               encMsg240 = {
                 own,
                 aistype: 24, // class B static
@@ -350,7 +349,7 @@ module.exports = function createPlugin(app) {
                 mmsi,
                 shipname: shipName,
               };
-    
+
               encMsg241 = {
                 own,
                 aistype: 24, // class B static
@@ -364,9 +363,10 @@ module.exports = function createPlugin(app) {
                 dimC: beam,
                 dimD: beam,
               };
-    
+
               if (aisDelay && (ais === 'A' || ais === 'B')) {
-                app.debug("Distance range: " + distance + "km, AIS target distance: "  + dist + "km" + ", Class " + ais + " Vessel" + ", MMSI:" + mmsi)
+                // eslint-disable-next-line no-useless-concat
+                app.debug(`Distance range: ${distance}km, AIS target distance: ${dist}km` + `, Class ${ais} Vessel` + `, MMSI:${mmsi}`);
                 if (ais === 'A') {
                   app.debug(`class A, ${i}, time: ${aisTime}`);
                   aisOut(encMsg3, aisTime);
@@ -378,8 +378,7 @@ module.exports = function createPlugin(app) {
                   aisOut(encMsg240, aisTime);
                   aisOut(encMsg241, aisTime);
                 }
-                app.debug("--------------------------------------------------------");
-  
+                app.debug('--------------------------------------------------------');
               }
             }
           }
@@ -393,7 +392,8 @@ module.exports = function createPlugin(app) {
           setStatus(`AIS NMEA message send: ${date}`);
         })
         .catch((err) => console.error(err));
-  };
+    }
+  }
 
   //----------------------------------------------------------------------------
 
@@ -413,22 +413,22 @@ module.exports = function createPlugin(app) {
       port: {
         type: 'number',
         title: 'HTTP port',
-        default: 3000
+        default: 3000,
       },
       portSec: {
         type: 'number',
         title: 'HTTPS port',
-        default: 3443
+        default: 3443,
       },
       sendOwn: {
         type: 'boolean',
         title: 'Send own AIS data, VDO',
-        default: true
+        default: true,
       },
       useTag: {
         type: 'boolean',
         title: 'Add Tag-block',
-        default: false
+        default: false,
       },
       distance: {
         type: 'integer',
