@@ -384,11 +384,6 @@ module.exports = function createPlugin(app) {
           }
           const dateobj = new Date(Date.now());
           const date = dateobj.toISOString();
-          app.handleMessage(plugin.id, {
-            context: `vessels.${app.selfId}`,
-            updates: [
-            ],
-          });
           setStatus(`AIS NMEA message send: ${date}`);
         })
         .catch((err) => console.error(err));
