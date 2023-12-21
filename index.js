@@ -398,7 +398,7 @@ module.exports = function createPlugin(app) {
           }
           const dateobj = new Date(Date.now());
           const date = dateobj.toISOString();
-          setStatus(`AIS NMEA message send: ${date}`);
+          setStatus(`AIS NMEA message sent: ${date}`);
         })
         .catch((err) => console.error(err));
     }
