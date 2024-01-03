@@ -307,7 +307,7 @@ module.exports = function createPlugin(app) {
             }
 
             const a = { lat: ownLat, lon: ownLon };
-            const b = { lat: lat, lon: lon };
+            const b = {  lat, lon  };
             const dist = (haversine(a, b) / 1000).toFixed(2);
 
             if (dist <= distance) {
