@@ -9,8 +9,9 @@ User can configure:
 - Own data can be added to AIS sending
 
 New:
-- v1.2.2, fix if own position is not available
-- v1.2.1, fix own vessel sending
+- v1.3.0, add: Navigational Status variations
+- v1.2.2, fix: if own position is not available
+- v1.2.1, fix: own vessel sending
 - v1.2.0, updated fetch method, no need for NODE_TLS_REJECT_UNAUTHORIZED=0 anymore
 - v1.1.5, updated vessels within selected timeframe are sent out, radius filtering around own vessel and tag-block option added
 - v1.1.4, small fix
