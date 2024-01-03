@@ -95,18 +95,32 @@ module.exports = function createPlugin(app) {
 
   const stateMapping = {
     motoring: 0,
+    'UnderWayUsingEngine': 0,
+    'under way using engine': 0,
+    'underway using engine': 0,
     anchored: 1,
+    'AtAnchor': 1,
+    'at anchor': 1,
     'not under command': 2,
     'restricted manouverability': 3,
     'constrained by draft': 4,
+    'constrained by her draught': 4,
     moored: 5,
+    'Moored': 5,
     aground: 6,
     fishing: 7,
+    'engaged in fishing': 7,
     sailing: 8,
+    'UnderWaySailing': 8,
+    'under way sailing': 8,
+    'underway sailing': 8,
     'hazardous material high speed': 9,
     'hazardous material wing in ground': 10,
+    'reserved for future use': 13,
     'ais-sart': 14,
     default: 15,
+    'UnDefined': 15,
+    'undefined': 15,
   };
 
   //----------------------------------------------------------------------------
@@ -384,7 +398,7 @@ module.exports = function createPlugin(app) {
           }
           const dateobj = new Date(Date.now());
           const date = dateobj.toISOString();
-          setStatus(`AIS NMEA message send: ${date}`);
+          setStatus(`AIS NMEA message sent: ${date}`);
         })
         .catch((err) => console.error(err));
     }
