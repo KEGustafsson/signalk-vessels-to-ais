@@ -1,2 +1,5 @@
 node_modules
 doc
+package-lock.json
+.eslintrc.js
+.gitignore
