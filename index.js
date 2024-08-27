@@ -43,6 +43,7 @@ module.exports = function createPlugin(app) {
   const setStatus = app.setPluginStatus || app.setProviderStatus;
 
   let useTag;
+  let eventName
 
   const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
@@ -52,6 +53,7 @@ module.exports = function createPlugin(app) {
 
   plugin.start = function (options) {
     useTag = options.useTag;
+    eventName = options.eventName;
 
     positionUpdate = options.position_update * 60;
     distance = options.distance;
@@ -149,7 +151,7 @@ module.exports = function createPlugin(app) {
     }
     if (sentence && sentence.length > 0) {
       app.debug(taggString + sentence);
-      app.emit('nmea0183out', taggString + sentence);
+      app.emit(eventName, taggString + sentence);
     }
   }
 
@@ -443,6 +445,11 @@ module.exports = function createPlugin(app) {
         type: 'integer',
         default: 100,
         title: 'AIS target within range [km]',
+      },
+      eventName: {
+        type: 'string',
+        default: 'nmea0183out',
+        title: 'Output event name',
       },
     },
   };
