@@ -256,11 +256,7 @@ module.exports = function createPlugin(app) {
               dst = jsonContent[jsonKey].navigation.destination.commonName.value;
             } catch (error) { dst = ''; }
             try {
-              if (i === 0) {
-                callSign = jsonContent[jsonKey].communication.callsignVhf;
-              } else {
-                callSign = jsonContent[jsonKey].communication.value.callsignVhf;
-              }
+              callSign = jsonContent[jsonKey].communication.callsignVhf.value || jsonContent[jsonKey].communication.callsignVhf;                
             } catch (error) { callSign = ''; }
             try {
               imo = (jsonContent[jsonKey].registrations.value.imo).substring(4, 20);
@@ -299,11 +295,6 @@ module.exports = function createPlugin(app) {
 
             if (i === 0) {
               own = true;
-              if (sendOwn) {
-                ais = 'A';
-              } else {
-                ais = '';
-              }
             } else {
               own = false;
             }
@@ -380,7 +371,7 @@ module.exports = function createPlugin(app) {
                 dimD: beam,
               };
 
-              if (aisDelay && (ais === 'A' || ais === 'B')) {
+              if (aisDelay && (ais === 'A' || ais === 'B' || ais === 'BASE')) {
                 // eslint-disable-next-line no-useless-concat
                 app.debug(`Distance range: ${distance}km, AIS target distance: ${dist}km` + `, Class ${ais} Vessel` + `, MMSI:${mmsi}`);
                 if (ais === 'A') {
@@ -389,10 +380,14 @@ module.exports = function createPlugin(app) {
                   aisOut(encMsg5, aisTime);
                 }
                 if (ais === 'B') {
-                  app.debug(`class B, ${i}, time: ${aisTime}`);
+                  app.debug(`class ${ais}, ${i}, time: ${aisTime}`);
                   aisOut(encMsg18, aisTime);
                   aisOut(encMsg240, aisTime);
                   aisOut(encMsg241, aisTime);
+                }
+                if (ais === 'BASE') {
+                  app.debug(`class ${ais}, ${i}, time: ${aisTime}`);
+                  aisOut(encMsg3, aisTime);
                 }
                 app.debug('--------------------------------------------------------');
               }
