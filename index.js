@@ -229,7 +229,9 @@ module.exports = function createPlugin(app) {
               mmsi = jsonContent[jsonKey].mmsi;
             } catch (error) { mmsi = null; }
             try {
-              shipName = jsonContent[jsonKey].name;
+              shipName = typeof jsonContent[jsonKey]?.name === 'string' 
+                ? jsonContent[jsonKey].name 
+                : jsonContent[jsonKey]?.name?.value || '';
             } catch (error) { shipName = ''; }
             try {
               lat = jsonContent[jsonKey].navigation.position.value.latitude;
