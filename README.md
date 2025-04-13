@@ -9,6 +9,7 @@ User can configure:
 - Own data can be added to AIS sending
 
 New:
+- v1.5.1, fix: fix: improve shipName type checking
 - v1.5.0, fix: callSign reading 
 - v1.4.0, add: Event output name to user configurable 
 - v1.3.0, add: Navigational Status variations
