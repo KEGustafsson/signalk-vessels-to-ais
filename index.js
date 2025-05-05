@@ -211,19 +211,27 @@ module.exports = function createPlugin(app) {
           const numberAIS = Object.keys(jsonContent).length;
           for (i = 0; i < numberAIS; i++) {
             const jsonKey = Object.keys(jsonContent)[i];
-
             try {
               aisTime = jsonContent[jsonKey].sensors.ais.class.timestamp;
             } catch (error) {
-              if (i === 0) {
-                aisTime = jsonContent[jsonKey].navigation.position.timestamp;
-              } else {
+              try {
+                if (i === 0) {
+                  aisTime = jsonContent[jsonKey].navigation.position.timestamp;
+                } else {
+                  aisTime = null;
+                }
+              } catch (error) {
                 aisTime = null;
               }
             }
 
-            aisDelay = (parseFloat((moment(new Date(Date.now()))
+            if (aisTime) {
+              aisDelay = (parseFloat((moment(new Date(Date.now()))
               .diff(aisTime) / 1000).toFixed(3))) < positionUpdate;
+            } else {
+              aisDelay = false;
+            }
+
 
             try {
               mmsi = jsonContent[jsonKey].mmsi;
