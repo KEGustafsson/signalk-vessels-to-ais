@@ -9,6 +9,7 @@ User can configure:
 - Own data can be added to AIS sending
 
 New:
+- v1.6.1, fix: ggencoder ^1.0.9 is use
 - v1.6.0, fix: enhance error handling for AIS timestamp retrieval
 - v1.5.1, fix: fix: improve shipName type checking
 - v1.5.0, fix: callSign reading 
