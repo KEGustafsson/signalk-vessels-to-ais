@@ -398,18 +398,19 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
       assert.strictEqual(data.beam, 5)
     })
 
-    it('handles draft division by 10', function () {
+    it('handles draft in meters (no division)', function () {
       const vessel = {
         mmsi: '123456789',
         design: {
           draft: {
-            current: { value: 30 }
+            current: { value: 3.5 }
           }
         }
       }
 
       const data = extractVesselData(vessel)
-      assert.strictEqual(data.draftCur, 3)
+      // Draft is passed through as-is in meters - ggencoder handles conversion
+      assert.strictEqual(data.draftCur, 3.5)
     })
   })
 
