@@ -98,14 +98,15 @@ module.exports = function createPlugin(app) {
 
     const vesselIds = Object.keys(vessels);
     let processedCount = 0;
-    let isFirst = true;
+
+    // Get own vessel identifier for comparison
+    const selfId = app.selfId || 'self';
 
     for (const vesselId of vesselIds) {
       const vessel = vessels[vesselId];
 
-      // Determine if this is own vessel
-      const isOwn = isFirst;
-      isFirst = false;
+      // Determine if this is own vessel by checking 'self' key or matching selfId
+      const isOwn = vesselId === 'self' || vesselId === selfId;
 
       // Skip own vessel if not configured to send
       if (isOwn && !sendOwn) {

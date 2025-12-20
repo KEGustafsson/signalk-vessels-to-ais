@@ -315,13 +315,13 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
   // ============================================================
   describe('extractVesselData', function () {
     it('extracts basic vessel data', function () {
+      // Using real SignalK structure: position.value contains {latitude, longitude}
       const vessel = {
         mmsi: '123456789',
         name: 'Test Vessel',
         navigation: {
           position: {
-            latitude: { value: 60.1 },
-            longitude: { value: 24.9 }
+            value: { latitude: 60.1, longitude: 24.9 }
           },
           speedOverGround: { value: 5.0 },
           courseOverGroundTrue: { value: Math.PI / 2 }
@@ -349,8 +349,7 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
         mmsi: '123456789',
         navigation: {
           position: {
-            latitude: { value: 60.1 },
-            longitude: { value: 24.9 }
+            value: { latitude: 60.1, longitude: 24.9 }
           }
         }
       }

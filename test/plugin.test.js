@@ -86,7 +86,7 @@ describe('signalk-vessels-to-ais-ws plugin integration', function () {
   }
 
   /**
-   * Create a mock vessel object
+   * Create a mock vessel object using real SignalK structure
    */
   function createMockVessel(options = {}) {
     const now = new Date().toISOString()
@@ -95,8 +95,11 @@ describe('signalk-vessels-to-ais-ws plugin integration', function () {
       name: options.name || 'Test Vessel',
       navigation: {
         position: {
-          latitude: { value: options.lat || 60.1 },
-          longitude: { value: options.lon || 24.9 },
+          // Real SignalK structure: value contains {latitude, longitude}
+          value: {
+            latitude: options.lat || 60.1,
+            longitude: options.lon || 24.9
+          },
           timestamp: options.timestamp || now
         },
         speedOverGround: { value: options.sog || 5.0 },
