@@ -30,8 +30,8 @@ SOFTWARE.
  * - Direct access to SignalK data model
  */
 
-const AisEncode = require('ggencoder').AisEncode
-const haversine = require('haversine-distance')
+const AisEncode = require('ggencoder').AisEncode;
+const haversine = require('haversine-distance');
 const {
   getValue,
   getTimestamp,
@@ -42,36 +42,35 @@ const {
   buildAisMessage18,
   buildAisMessage24A,
   buildAisMessage24B,
-  isDataFresh
-} = require('./lib/helpers')
+  isDataFresh,
+} = require('./lib/helpers');
 
 module.exports = function createPlugin(app) {
-  const plugin = {}
-  plugin.id = 'signalk-vessels-to-ais-ws'
-  plugin.name = 'Other vessels data to AIS NMEA0183 (WebSocket)'
-  plugin.description =
-    'SignalK server plugin to convert other vessel data to NMEA0183 AIS format using direct data access (no REST API)'
+  const plugin = {};
+  plugin.id = 'signalk-vessels-to-ais-ws';
+  plugin.name = 'Other vessels data to AIS NMEA0183 (WebSocket)';
+  plugin.description = 'SignalK server plugin to convert other vessel data to NMEA0183 AIS format using direct data access (no REST API)';
 
-  let intervalId = null
-  let positionUpdate = 60
-  let distance = 100
-  let sendOwn = true
-  let useTag = false
-  let eventName = 'nmea0183out'
+  let intervalId = null;
+  let positionUpdate = 60;
+  let distance = 100;
+  let sendOwn = true;
+  let useTag = false;
+  let eventName = 'nmea0183out';
 
-  const setStatus = app.setPluginStatus || app.setProviderStatus
+  const setStatus = app.setPluginStatus || app.setProviderStatus;
 
   // NMEA output
   function aisOut(encMsg) {
-    const enc = new AisEncode(encMsg)
-    const sentence = enc.nmea
-    let tagString = ''
+    const enc = new AisEncode(encMsg);
+    const sentence = enc.nmea;
+    let tagString = '';
     if (useTag) {
-      tagString = createTagBlock()
+      tagString = createTagBlock();
     }
     if (sentence && sentence.length > 0) {
-      app.debug(tagString + sentence)
-      app.emit(eventName, tagString + sentence)
+      app.debug(tagString + sentence);
+      app.emit(eventName, tagString + sentence);
     }
   }
 
@@ -81,132 +80,132 @@ module.exports = function createPlugin(app) {
    */
   function processVessels() {
     // Get own position for distance calculation
-    const ownPosition = app.getSelfPath('navigation.position.value')
+    const ownPosition = app.getSelfPath('navigation.position.value');
     if (!ownPosition || ownPosition.latitude === undefined || ownPosition.longitude === undefined) {
-      app.debug('Own position not available, skipping')
-      return
+      app.debug('Own position not available, skipping');
+      return;
     }
 
-    const ownLat = ownPosition.latitude
-    const ownLon = ownPosition.longitude
+    const ownLat = ownPosition.latitude;
+    const ownLon = ownPosition.longitude;
 
     // Get all vessels using direct data access - NO REST API!
-    const vessels = app.getPath('vessels')
+    const vessels = app.getPath('vessels');
     if (!vessels) {
-      app.debug('No vessels data available')
-      return
+      app.debug('No vessels data available');
+      return;
     }
 
-    const vesselIds = Object.keys(vessels)
-    let processedCount = 0
-    let isFirst = true
+    const vesselIds = Object.keys(vessels);
+    let processedCount = 0;
+    let isFirst = true;
 
     for (const vesselId of vesselIds) {
-      const vessel = vessels[vesselId]
+      const vessel = vessels[vesselId];
 
       // Determine if this is own vessel
-      const isOwn = isFirst
-      isFirst = false
+      const isOwn = isFirst;
+      isFirst = false;
 
       // Skip own vessel if not configured to send
       if (isOwn && !sendOwn) {
-        continue
+        continue;
       }
 
       // Extract AIS timestamp for freshness check
-      let aisTime = getValue(vessel, 'sensors.ais.class.timestamp')
+      let aisTime = getValue(vessel, 'sensors.ais.class.timestamp');
       if (!aisTime) {
-        aisTime = getTimestamp(vessel, 'navigation.position')
+        aisTime = getTimestamp(vessel, 'navigation.position');
       }
 
       // Check data freshness
-      const aisDelay = isDataFresh(aisTime, positionUpdate)
+      const aisDelay = isDataFresh(aisTime, positionUpdate);
 
       // Extract vessel data using helper
-      const data = extractVesselData(vessel)
+      const data = extractVesselData(vessel);
 
       // Skip if no position
       if (data.lat === null || data.lon === null) {
-        continue
+        continue;
       }
 
       // Calculate distance from own vessel
-      const a = { lat: ownLat, lon: ownLon }
-      const b = { lat: data.lat, lon: data.lon }
-      const dist = (haversine(a, b) / 1000).toFixed(2)
+      const a = { lat: ownLat, lon: ownLon };
+      const b = { lat: data.lat, lon: data.lon };
+      const dist = (haversine(a, b) / 1000).toFixed(2);
 
       // Check if within distance range
       if (parseFloat(dist) > distance) {
-        continue
+        continue;
       }
 
       // Send AIS messages based on class
       if (aisDelay && (data.aisClass === 'A' || data.aisClass === 'B' || data.aisClass === 'BASE')) {
         app.debug(
-          `Distance range: ${distance}km, AIS target distance: ${dist}km, Class ${data.aisClass} Vessel, MMSI:${data.mmsi}`
-        )
+          `Distance range: ${distance}km, AIS target distance: ${dist}km, Class ${data.aisClass} Vessel, MMSI:${data.mmsi}`,
+        );
 
         if (data.aisClass === 'A') {
-          app.debug(`Class A, MMSI: ${data.mmsi}, Name: ${data.shipName || 'Unknown'}`)
-          aisOut(buildAisMessage3(data, isOwn))
-          aisOut(buildAisMessage5(data, isOwn))
-          processedCount++
+          app.debug(`Class A, MMSI: ${data.mmsi}, Name: ${data.shipName || 'Unknown'}`);
+          aisOut(buildAisMessage3(data, isOwn));
+          aisOut(buildAisMessage5(data, isOwn));
+          processedCount++;
         }
 
         if (data.aisClass === 'B') {
-          app.debug(`Class B, MMSI: ${data.mmsi}, Name: ${data.shipName || 'Unknown'}`)
-          aisOut(buildAisMessage18(data, isOwn))
-          aisOut(buildAisMessage24A(data, isOwn))
-          aisOut(buildAisMessage24B(data, isOwn))
-          processedCount++
+          app.debug(`Class B, MMSI: ${data.mmsi}, Name: ${data.shipName || 'Unknown'}`);
+          aisOut(buildAisMessage18(data, isOwn));
+          aisOut(buildAisMessage24A(data, isOwn));
+          aisOut(buildAisMessage24B(data, isOwn));
+          processedCount++;
         }
 
         if (data.aisClass === 'BASE') {
-          app.debug(`Base Station, MMSI: ${data.mmsi}`)
-          aisOut(buildAisMessage3(data, isOwn))
-          processedCount++
+          app.debug(`Base Station, MMSI: ${data.mmsi}`);
+          aisOut(buildAisMessage3(data, isOwn));
+          processedCount++;
         }
 
-        app.debug('--------------------------------------------------------')
+        app.debug('--------------------------------------------------------');
       }
     }
 
-    const dateObj = new Date(Date.now())
-    const date = dateObj.toISOString()
-    setStatus(`${processedCount} AIS targets sent: ${date}`)
+    const dateObj = new Date(Date.now());
+    const date = dateObj.toISOString();
+    setStatus(`${processedCount} AIS targets sent: ${date}`);
 
     if (processedCount > 0) {
-      app.reportOutputMessages(processedCount)
+      app.reportOutputMessages(processedCount);
     }
   }
 
   plugin.start = function (options) {
-    positionUpdate = (options.position_update || 1) * 60
-    distance = options.distance || 100
-    sendOwn = options.sendOwn !== false
-    useTag = options.useTag || false
-    eventName = options.eventName || 'nmea0183out'
+    positionUpdate = (options.position_update || 1) * 60;
+    distance = options.distance || 100;
+    sendOwn = options.sendOwn !== false;
+    useTag = options.useTag || false;
+    eventName = options.eventName || 'nmea0183out';
 
-    app.debug('Plugin starting with direct data access (no REST API)')
-    app.debug(`Update interval: ${positionUpdate}s, Distance: ${distance}km`)
+    app.debug('Plugin starting with direct data access (no REST API)');
+    app.debug(`Update interval: ${positionUpdate}s, Distance: ${distance}km`);
 
     // Initial run
-    processVessels()
+    processVessels();
 
     // Set up periodic processing
-    intervalId = setInterval(processVessels, positionUpdate * 1000)
+    intervalId = setInterval(processVessels, positionUpdate * 1000);
 
-    setStatus('Running')
-    app.debug('Plugin started')
-  }
+    setStatus('Running');
+    app.debug('Plugin started');
+  };
 
   plugin.stop = function () {
     if (intervalId) {
-      clearInterval(intervalId)
-      intervalId = null
+      clearInterval(intervalId);
+      intervalId = null;
     }
-    app.debug('Plugin stopped')
-  }
+    app.debug('Plugin stopped');
+  };
 
   plugin.schema = {
     type: 'object',
@@ -215,30 +214,30 @@ module.exports = function createPlugin(app) {
         type: 'number',
         default: 1,
         title: 'How often AIS data is sent to NMEA0183 out (in minutes)',
-        description: 'E.g. 0.5 = 30s, 1 = 1min'
+        description: 'E.g. 0.5 = 30s, 1 = 1min',
       },
       sendOwn: {
         type: 'boolean',
         title: 'Send own AIS data (VDO)',
-        default: true
+        default: true,
       },
       useTag: {
         type: 'boolean',
         title: 'Add Tag-block',
-        default: false
+        default: false,
       },
       distance: {
         type: 'integer',
         default: 100,
-        title: 'AIS target within range [km]'
+        title: 'AIS target within range [km]',
       },
       eventName: {
         type: 'string',
         default: 'nmea0183out',
-        title: 'Output event name'
-      }
-    }
-  }
+        title: 'Output event name',
+      },
+    },
+  };
 
-  return plugin
-}
+  return plugin;
+};

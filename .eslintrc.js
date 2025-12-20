@@ -20,5 +20,7 @@ module.exports = {
     'one-var-declaration-per-line': 0,
     'one-var': 0,
     'no-plusplus': 0,
+    'no-restricted-syntax': 0,
+    'no-continue': 0,
   },
 };
