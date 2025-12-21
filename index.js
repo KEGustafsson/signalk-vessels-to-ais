@@ -181,7 +181,10 @@ module.exports = function createPlugin(app) {
   }
 
   plugin.start = function (options) {
-    positionUpdate = (options.position_update || 1) * 60;
+    // Handle backward compatibility: old configs used minutes, new configs use seconds
+    // If value < 10, assume it's minutes (old format) and convert to seconds
+    const configValue = options.position_update || 60;
+    positionUpdate = configValue < 10 ? configValue * 60 : configValue;
     distance = options.distance || 100;
     sendOwn = options.sendOwn !== false;
     useTag = options.useTag || false;
@@ -213,9 +216,9 @@ module.exports = function createPlugin(app) {
     properties: {
       position_update: {
         type: 'number',
-        default: 1,
-        title: 'How often AIS data is sent (value in minutes, e.g. 1 = 60s, 0.5 = 30s)',
-        description: 'Update interval: 0.5 = 30 seconds, 1 = 60 seconds, 2 = 120 seconds',
+        default: 60,
+        title: 'How often AIS data is sent (seconds)',
+        description: 'Update interval in seconds (e.g. 30, 60, 120)',
       },
       sendOwn: {
         type: 'boolean',
