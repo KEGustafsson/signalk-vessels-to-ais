@@ -47,7 +47,7 @@ const {
 
 module.exports = function createPlugin(app) {
   const plugin = {};
-  plugin.id = 'signalk-vessels-to-ais-ws';
+  plugin.id = 'signalk-vessels-to-ais';
   plugin.name = 'Other vessels data to AIS NMEA0183 (WebSocket)';
   plugin.description = 'SignalK server plugin to convert other vessel data to NMEA0183 AIS format using direct data access (no REST API)';
 

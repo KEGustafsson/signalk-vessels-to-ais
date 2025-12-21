@@ -361,7 +361,7 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
       assert.strictEqual(data.lon, 24.9)
       assert.strictEqual(data.sog, null)
       assert.strictEqual(data.cog, null)
-      assert.strictEqual(data.shipName, null)
+      assert.strictEqual(data.shipName, '') // empty string to prevent ggencoder .toUpperCase() error
     })
 
     it('converts numeric shipName to empty string', function () {
