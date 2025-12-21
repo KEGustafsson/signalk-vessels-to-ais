@@ -214,8 +214,8 @@ module.exports = function createPlugin(app) {
       position_update: {
         type: 'number',
         default: 1,
-        title: 'How often AIS data is sent to NMEA0183 out (in minutes)',
-        description: 'E.g. 0.5 = 30s, 1 = 1min',
+        title: 'How often AIS data is sent (value in minutes, e.g. 1 = 60s, 0.5 = 30s)',
+        description: 'Update interval: 0.5 = 30 seconds, 1 = 60 seconds, 2 = 120 seconds',
       },
       sendOwn: {
         type: 'boolean',
