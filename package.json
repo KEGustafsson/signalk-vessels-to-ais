@@ -1,26 +1,27 @@
 {
   "name": "signalk-vessels-to-ais",
-  "version": "1.6.1",
-  "description": "SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications",
+  "version": "2.0.0-beta.2",
+  "description": "SignalK server plugin to convert other vessel data to NMEA0183 AIS format using direct data access (no REST API)",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha 'test/**/*.test.js'",
+    "lint": "eslint index.js lib/"
   },
   "keywords": [
-    "signalk-node-server-plugin"
+    "signalk-node-server-plugin",
+    "signalk-category-ais"
   ],
   "repository": "https://github.com/KEGustafsson/signalk-vessels-to-ais",
   "author": "Karl-Erik Gustafsson",
   "license": "MIT",
   "dependencies": {
     "haversine-distance": "^1.2.1",
-    "moment": "^2.29.1",
-    "node-fetch": "^3.1.1",
     "ggencoder": "^1.0.9"
   },
   "devDependencies": {
     "eslint": "^7.17.0",
     "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-plugin-import": "^2.22.1"
+    "eslint-plugin-import": "^2.22.1",
+    "mocha": "^10.2.0"
   }
 }
