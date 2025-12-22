@@ -3,3 +3,6 @@ doc
 package-lock.json
 .eslintrc.js
 .gitignore
+test
+.github
+.mocharc.js
