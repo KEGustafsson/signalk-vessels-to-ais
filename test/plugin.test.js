@@ -110,14 +110,21 @@ describe('signalk-vessels-to-ais-ws plugin integration', function () {
       },
       sensors: {
         ais: {
-          class: { value: options.aisClass || 'A' }
+          class: { value: options.aisClass || 'A' },
+          fromBow: { value: options.fromBow !== undefined ? options.fromBow : 8 },
+          fromCenter: { value: options.fromCenter !== undefined ? options.fromCenter : 0 }
         }
       },
       design: {
-        length: { overall: { value: options.length || 15 } },
-        beam: { value: options.beam || 5 },
-        draft: { current: { value: options.draft || 2 } },
-        aisShipType: { id: { value: options.shipType || 36 } }
+        length: { value: { overall: options.length !== undefined ? options.length : 15 } },
+        beam: { value: options.beam !== undefined ? options.beam : 5 },
+        draft: { value: { current: options.draft !== undefined ? options.draft : 2 } },
+        aisShipType: {
+          value: {
+            id: options.shipType !== undefined ? options.shipType : 36,
+            name: 'Sailing'
+          }
+        }
       },
       communication: {
         callsignVhf: { value: options.callsign || 'TEST1' }

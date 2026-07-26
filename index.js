@@ -42,6 +42,9 @@ const {
   buildAisMessage18,
   buildAisMessage24A,
   buildAisMessage24B,
+  hasUsefulAisMessage5Data,
+  hasUsefulAisMessage24AData,
+  hasUsefulAisMessage24BData,
   isDataFresh,
 } = require('./lib/helpers');
 
@@ -149,15 +152,27 @@ module.exports = function createPlugin(app) {
         if (data.aisClass === 'A') {
           app.debug(`Class A, MMSI: ${data.mmsi}, Name: ${data.shipName || 'Unknown'}`);
           aisOut(buildAisMessage3(data, isOwn));
-          aisOut(buildAisMessage5(data, isOwn));
+          if (hasUsefulAisMessage5Data(data)) {
+            aisOut(buildAisMessage5(data, isOwn));
+          } else {
+            app.debug(`Skipping empty AIS message type 5 for MMSI: ${data.mmsi}`);
+          }
           processedCount++;
         }
 
         if (data.aisClass === 'B') {
           app.debug(`Class B, MMSI: ${data.mmsi}, Name: ${data.shipName || 'Unknown'}`);
           aisOut(buildAisMessage18(data, isOwn));
-          aisOut(buildAisMessage24A(data, isOwn));
-          aisOut(buildAisMessage24B(data, isOwn));
+          if (hasUsefulAisMessage24AData(data)) {
+            aisOut(buildAisMessage24A(data, isOwn));
+          } else {
+            app.debug(`Skipping empty AIS message type 24A for MMSI: ${data.mmsi}`);
+          }
+          if (hasUsefulAisMessage24BData(data)) {
+            aisOut(buildAisMessage24B(data, isOwn));
+          } else {
+            app.debug(`Skipping empty AIS message type 24B for MMSI: ${data.mmsi}`);
+          }
           processedCount++;
         }
 
