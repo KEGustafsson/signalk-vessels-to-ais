@@ -8,6 +8,7 @@ const {
   toHexString,
   createTagBlock,
   getNavStatus,
+  calculateDimensions,
   extractVesselData,
   buildAisMessage3,
   buildAisMessage5,
@@ -56,6 +57,28 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
         }
       }
       assert.strictEqual(getValue(obj, 'navigation.speedOverGround'), 5.5)
+    })
+
+    it('extracts nested values inside SignalK value wrappers', function () {
+      const obj = {
+        design: {
+          length: {
+            value: {
+              overall: 11.72
+            }
+          },
+          aisShipType: {
+            value: {
+              id: 36,
+              name: 'Sailing'
+            }
+          }
+        }
+      }
+
+      assert.strictEqual(getValue(obj, 'design.length.overall'), 11.72)
+      assert.strictEqual(getValue(obj, 'design.aisShipType.id'), 36)
+      assert.strictEqual(getValue(obj, 'design.aisShipType.name'), 'Sailing')
     })
 
     it('returns null for non-existent path', function () {
@@ -386,7 +409,7 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
       assert.strictEqual(data.imo, '9876543')
     })
 
-    it('handles beam division by 2', function () {
+    it('extracts beam as the full vessel beam', function () {
       const vessel = {
         mmsi: '123456789',
         design: {
@@ -395,7 +418,7 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
       }
 
       const data = extractVesselData(vessel)
-      assert.strictEqual(data.beam, 5)
+      assert.strictEqual(data.beam, 10)
     })
 
     it('handles draft in meters (no division)', function () {
@@ -411,6 +434,110 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
       const data = extractVesselData(vessel)
       // Draft is passed through as-is in meters - ggencoder handles conversion
       assert.strictEqual(data.draftCur, 3.5)
+    })
+
+    it('extracts dimensions and AIS type from SignalK value objects', function () {
+      const vessel = {
+        mmsi: '227406160',
+        name: 'TANAGRA IV',
+        design: {
+          length: { value: { overall: 11.72 } },
+          beam: { value: 3.93 },
+          draft: { value: { current: 1.8 } },
+          aisShipType: { value: { id: 36, name: 'Sailing' } }
+        },
+        sensors: {
+          ais: {
+            fromBow: { value: 6 },
+            fromCenter: { value: 0 },
+            class: { value: 'B' }
+          }
+        }
+      }
+
+      const data = extractVesselData(vessel)
+
+      assert.strictEqual(data.length, 11.72)
+      assert.strictEqual(data.beam, 3.93)
+      assert.strictEqual(data.id, 36)
+      assert.strictEqual(data.type, 'Sailing')
+      assert.strictEqual(data.draftCur, 1.8)
+      assert.strictEqual(data.fromBow, 6)
+      assert.strictEqual(data.fromCenter, 0)
+      assert.strictEqual(data.dimA, 6)
+      assert.strictEqual(data.dimB, 6)
+      assert.strictEqual(data.dimC, 2)
+      assert.strictEqual(data.dimD, 2)
+    })
+
+    it('centers AIS dimensions when AIS antenna offsets are missing', function () {
+      const vessel = {
+        mmsi: '123456789',
+        design: {
+          length: { value: { overall: 20 } },
+          beam: { value: 6 }
+        }
+      }
+
+      const data = extractVesselData(vessel)
+
+      assert.strictEqual(data.fromBow, null)
+      assert.strictEqual(data.fromCenter, null)
+      assert.strictEqual(data.dimA, 10)
+      assert.strictEqual(data.dimB, 10)
+      assert.strictEqual(data.dimC, 3)
+      assert.strictEqual(data.dimD, 3)
+    })
+
+    it('falls back to maximum draft when current draft is missing', function () {
+      const vessel = {
+        mmsi: '123456789',
+        design: {
+          draft: {
+            value: {
+              maximum: 2
+            }
+          }
+        }
+      }
+
+      const data = extractVesselData(vessel)
+      assert.strictEqual(data.draftCur, 2)
+    })
+  })
+
+  describe('calculateDimensions', function () {
+    it('uses antenna offsets from bow and centerline', function () {
+      assert.deepStrictEqual(calculateDimensions(171, 28, 44, 0), {
+        dimA: 44,
+        dimB: 127,
+        dimC: 14,
+        dimD: 14
+      })
+    })
+
+    it('handles starboard and port center offsets', function () {
+      assert.deepStrictEqual(calculateDimensions(52, 8, 18, 3), {
+        dimA: 18,
+        dimB: 34,
+        dimC: 7,
+        dimD: 1
+      })
+      assert.deepStrictEqual(calculateDimensions(31, 6, 8, -1), {
+        dimA: 8,
+        dimB: 23,
+        dimC: 2,
+        dimD: 4
+      })
+    })
+
+    it('centers dimensions when antenna offsets are missing', function () {
+      assert.deepStrictEqual(calculateDimensions(12, 4, null, null), {
+        dimA: 6,
+        dimB: 6,
+        dimC: 2,
+        dimD: 2
+      })
     })
   })
 
@@ -482,10 +609,10 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
       assert.strictEqual(msg.shipname, 'Test Ship')
       assert.strictEqual(msg.draught, 3.5)
       assert.strictEqual(msg.destination, 'Helsinki')
-      assert.strictEqual(msg.dimA, 0)
-      assert.strictEqual(msg.dimB, 50)
-      assert.strictEqual(msg.dimC, 8)
-      assert.strictEqual(msg.dimD, 8)
+      assert.strictEqual(msg.dimA, 25)
+      assert.strictEqual(msg.dimB, 25)
+      assert.strictEqual(msg.dimC, 4)
+      assert.strictEqual(msg.dimD, 4)
     })
   })
 
@@ -566,10 +693,10 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
       assert.strictEqual(msg.mmsi, '123456789')
       assert.strictEqual(msg.cargo, 36)
       assert.strictEqual(msg.callsign, 'XYZ')
-      assert.strictEqual(msg.dimA, 0)
-      assert.strictEqual(msg.dimB, 12)
-      assert.strictEqual(msg.dimC, 4)
-      assert.strictEqual(msg.dimD, 4)
+      assert.strictEqual(msg.dimA, 6)
+      assert.strictEqual(msg.dimB, 6)
+      assert.strictEqual(msg.dimC, 2)
+      assert.strictEqual(msg.dimD, 2)
     })
   })
 
