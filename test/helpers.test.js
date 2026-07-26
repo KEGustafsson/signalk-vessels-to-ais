@@ -564,6 +564,7 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
       assert.strictEqual(hasUsefulAisMessage5Data({ shipName: 'TEST' }), true)
       assert.strictEqual(hasUsefulAisMessage5Data({ callSign: 'ABCD' }), true)
       assert.strictEqual(hasUsefulAisMessage5Data({ imo: '9876543' }), true)
+      assert.strictEqual(hasUsefulAisMessage5Data({ imo: 9876543 }), true)
       assert.strictEqual(hasUsefulAisMessage5Data({ id: 70 }), true)
       assert.strictEqual(hasUsefulAisMessage5Data({ draftCur: 3.5 }), true)
       assert.strictEqual(hasUsefulAisMessage5Data({ dst: 'Helsinki' }), true)
