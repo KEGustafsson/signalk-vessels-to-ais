@@ -9,6 +9,9 @@ const {
   createTagBlock,
   getNavStatus,
   calculateDimensions,
+  hasUsefulAisMessage5Data,
+  hasUsefulAisMessage24AData,
+  hasUsefulAisMessage24BData,
   extractVesselData,
   buildAisMessage3,
   buildAisMessage5,
@@ -538,6 +541,55 @@ describe('signalk-vessels-to-ais-ws helpers', function () {
         dimC: 2,
         dimD: 2
       })
+    })
+  })
+
+  describe('static AIS message usefulness', function () {
+    it('rejects empty Class A static data', function () {
+      assert.strictEqual(hasUsefulAisMessage5Data({
+        shipName: '',
+        callSign: '',
+        imo: '',
+        id: null,
+        draftCur: null,
+        dst: '',
+        dimA: 0,
+        dimB: 0,
+        dimC: 0,
+        dimD: 0
+      }), false)
+    })
+
+    it('accepts Class A static data with any useful field', function () {
+      assert.strictEqual(hasUsefulAisMessage5Data({ shipName: 'TEST' }), true)
+      assert.strictEqual(hasUsefulAisMessage5Data({ callSign: 'ABCD' }), true)
+      assert.strictEqual(hasUsefulAisMessage5Data({ imo: '9876543' }), true)
+      assert.strictEqual(hasUsefulAisMessage5Data({ id: 70 }), true)
+      assert.strictEqual(hasUsefulAisMessage5Data({ draftCur: 3.5 }), true)
+      assert.strictEqual(hasUsefulAisMessage5Data({ dst: 'Helsinki' }), true)
+      assert.strictEqual(hasUsefulAisMessage5Data({ dimA: 1 }), true)
+    })
+
+    it('requires a ship name for Class B static part A', function () {
+      assert.strictEqual(hasUsefulAisMessage24AData({ shipName: '' }), false)
+      assert.strictEqual(hasUsefulAisMessage24AData({ shipName: 'TEST' }), true)
+    })
+
+    it('rejects empty Class B static part B data', function () {
+      assert.strictEqual(hasUsefulAisMessage24BData({
+        callSign: '',
+        id: null,
+        dimA: 0,
+        dimB: 0,
+        dimC: 0,
+        dimD: 0
+      }), false)
+    })
+
+    it('accepts Class B static part B data with any useful field', function () {
+      assert.strictEqual(hasUsefulAisMessage24BData({ callSign: 'XYZ' }), true)
+      assert.strictEqual(hasUsefulAisMessage24BData({ id: 36 }), true)
+      assert.strictEqual(hasUsefulAisMessage24BData({ dimC: 2 }), true)
     })
   })
 
