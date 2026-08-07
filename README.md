@@ -9,6 +9,7 @@ User can configure:
 - Own data can be added to AIS sending
 
 New:
+- v2.1.1, add: App Store screenshot, fix: CI build/format-check scripts, docs: add CHANGELOG.md
 - v2.1.0, fix: AIS static data dimensions
 - v2.0.0, refactor: use direct data access (app.getPath) instead of REST API, removed node-fetch and moment dependencies, added unit tests
 - v1.6.1, fix: ggencoder ^1.0.9 is use
