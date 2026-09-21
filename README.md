@@ -4,11 +4,18 @@
 
 SignalK server plugin to convert other vessel data to NMEA0183 AIS format and forward it out to 3rd party applications.
 
-User can configure:
-- How often data is sent out
-- Own data can be added to AIS sending
+## Configuration
+
+| Option | Default | Description |
+| --- | --- | --- |
+| How often AIS data is sent to NMEA0183 out (in minutes) | `1` | Interval between output cycles. E.g. `0.5` = 30 s, `1` = 1 min. This value is also used as the maximum age of a vessel's data: targets older than the interval are not sent. |
+| Send own AIS data (VDO) | `true` | Also emit your own vessel as an `!AIVDO` sentence. Requires `sensors.ais.class` to be present for your vessel. |
+| Add Tag-block | `false` | Prefix each sentence with an NMEA tag block carrying a source id and timestamp. |
+| AIS target within range [km] | `100` | Only vessels within this distance of your own position are sent. |
+| Output event name | `nmea0183out` | The SignalK server event the sentences are emitted on. |
 
 New:
+- v2.2.0, chore: repository-wide lint clean and enforced in CI, docs: document all configuration options
 - v2.1.1, add: App Store screenshot, fix: CI build/format-check scripts, docs: add CHANGELOG.md
 - v2.1.0, fix: AIS static data dimensions
 - v2.0.0, refactor: use direct data access (app.getPath) instead of REST API, removed node-fetch and moment dependencies, added unit tests
