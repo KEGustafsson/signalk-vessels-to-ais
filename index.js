@@ -46,6 +46,8 @@ const {
   hasUsefulAisMessage24AData,
   hasUsefulAisMessage24BData,
   isDataFresh,
+  parseExcludedSources,
+  isVesselExcluded,
 } = require('./lib/helpers');
 
 module.exports = function createPlugin(app) {
@@ -60,6 +62,7 @@ module.exports = function createPlugin(app) {
   let sendOwn = true;
   let useTag = false;
   let eventName = 'nmea0183out';
+  let excludedSources = [];
 
   const setStatus = app.setPluginStatus || app.setProviderStatus;
 
@@ -113,6 +116,13 @@ module.exports = function createPlugin(app) {
 
       // Skip own vessel if not configured to send
       if (isOwn && !sendOwn) {
+        continue;
+      }
+
+      // Skip vessels that already reach the NMEA0183 output by another route,
+      // e.g. a transponder that emits AIVDM itself (issue #43).
+      if (isVesselExcluded(vessel, excludedSources)) {
+        app.debug(`Skipping ${vesselId}: position source is excluded`);
         continue;
       }
 
@@ -201,9 +211,13 @@ module.exports = function createPlugin(app) {
     sendOwn = options.sendOwn !== false;
     useTag = options.useTag || false;
     eventName = options.eventName || 'nmea0183out';
+    excludedSources = parseExcludedSources(options.excludeSources);
 
     app.debug('Plugin starting with direct data access (no REST API)');
     app.debug(`Update interval: ${positionUpdate}s, Distance: ${distance}km`);
+    if (excludedSources.length > 0) {
+      app.debug(`Excluded sources: ${excludedSources.join(', ')}`);
+    }
 
     // Initial run
     processVessels();
@@ -251,6 +265,14 @@ module.exports = function createPlugin(app) {
         type: 'string',
         default: 'nmea0183out',
         title: 'Output event name',
+      },
+      excludeSources: {
+        type: 'string',
+        default: '',
+        title: 'Exclude AIS sources (comma separated)',
+        description: 'Vessels whose position comes from one of these SignalK sources are not sent, '
+          + 'for receivers that already output NMEA0183 AIS themselves. '
+          + 'E.g. "maiana.AI". A label on its own, e.g. "maiana", excludes all of its talkers.',
       },
     },
   };

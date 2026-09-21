@@ -3,6 +3,7 @@
 All notable changes to this project are documented in this file.
 
 ## [2.2.0]
+- add: source exclude filter (#43) -- new `excludeSources` option; vessels whose position comes from a listed SignalK source are not sent, for receivers that already emit NMEA0183 AIS themselves. A vessel is skipped if any source that has written its position is excluded, not only the most recent one
 - chore: lint now covers the whole repository (`eslint .`, previously only `index.js` and `lib/`) and is clean; the 946 pre-existing errors in `test/` are fixed
 - chore: lint runs as part of `npm test`, so both CI jobs execute it -- previously lint ran nowhere in CI
 - chore: add an eslint override for `test/**` (mocha env; `prefer-arrow-callback` off, since mocha resolves test context via `this`)
