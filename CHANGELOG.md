@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.2.0]
+- add: source exclude filter (#43) -- new `excludeSources` option; vessels whose position comes from a listed SignalK source are not sent, for receivers that already emit NMEA0183 AIS themselves. A vessel is skipped if any source that has written its position is excluded, not only the most recent one
+- chore: lint now covers the whole repository (`eslint .`, previously only `index.js` and `lib/`) and is clean; the 946 pre-existing errors in `test/` are fixed
+- chore: lint runs as part of `npm test`, so both CI jobs execute it -- previously lint ran nowhere in CI
+- chore: add an eslint override for `test/**` (mocha env; `prefer-arrow-callback` off, since mocha resolves test context via `this`)
+- chore: remove unused mocks and bindings from the test suite, hoist `require()` calls to module scope
+- docs: document all five configuration options in the README (`distance`, `useTag` and `eventName` were undocumented)
+
 ## [2.1.1]
 - add: App Store screenshot (`signalk.screenshots` in package.json)
 - fix: `doc/` was excluded from the published npm package, so the screenshot never reached the App Store CDN

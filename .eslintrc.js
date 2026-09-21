@@ -23,4 +23,17 @@ module.exports = {
     'no-restricted-syntax': 0,
     'no-continue': 0,
   },
+  overrides: [
+    {
+      files: ['test/**/*.js'],
+      env: {
+        mocha: true,
+      },
+      rules: {
+        // Mocha resolves suite/test context via `this` (e.g. this.timeout()),
+        // which arrow callbacks would break, so keep function expressions here.
+        'prefer-arrow-callback': 0,
+      },
+    },
+  ],
 };
